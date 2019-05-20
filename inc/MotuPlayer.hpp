@@ -1,23 +1,38 @@
 #pragma once
 #include "HapticSymbol.hpp"
 #include <unordered_map>
+#ifdef linux
 #include <dirent.h>
+#include <pthread.h>
+#include <unistd.h>
+#endif
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 #include <sys/types.h>
 #include <errno.h>
 #include "../inc/portaudio.h"
 #include <string.h>
-#include <pthread.h>
-#include <unistd.h>
 #include <array>
 #include <cstdio>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 
+#ifdef _WIN32
+#define PHONEMES_PATH (".\\Symbols\\Phonemes\\")
+#define CHUNKS_PATH (".\\Symbols\\Chunks\\")
+#define FLAGS_PATH (".\\Symbols\\Flags\\")
+#define FLITE_MAP_PATH (".\\Symbols\\Flite\\mapping.csv")
+#else
 #define PHONEMES_PATH ("./Symbols/Phonemes/")
 #define CHUNKS_PATH ("./Symbols/Chunks/")
 #define FLAGS_PATH ("./Symbols/Flags/")
 #define FLITE_MAP_PATH ("./Symbols/Flite/mapping.csv")
+#endif
+
+
 
 #define SAMPLE_RATE (44100)
 #define FRAMES_PER_BUFFER (64)
