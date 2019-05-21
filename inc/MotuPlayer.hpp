@@ -9,7 +9,11 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#include <strsafe.h>
+#include <thread>
+#include <mutex>
 #endif
+
 #include <sys/types.h>
 #include <errno.h>
 #include "../inc/portaudio.h"
@@ -21,10 +25,10 @@
 #include <stdexcept>
 
 #ifdef _WIN32
-#define PHONEMES_PATH (".\\Symbols\\Phonemes\\")
-#define CHUNKS_PATH (".\\Symbols\\Chunks\\")
-#define FLAGS_PATH (".\\Symbols\\Flags\\")
-#define FLITE_MAP_PATH (".\\Symbols\\Flite\\mapping.csv")
+#define PHONEMES_PATH ("\\Symbols\\Phonemes\\")
+#define CHUNKS_PATH ("\\Symbols\\Chunks\\")
+#define FLAGS_PATH ("\\Symbols\\Flags\\")
+#define FLITE_MAP_PATH ("\\Symbols\\Flite\\mapping.csv")
 #else
 #define PHONEMES_PATH ("./Symbols/Phonemes/")
 #define CHUNKS_PATH ("./Symbols/Chunks/")
@@ -65,7 +69,11 @@ namespace TapX
         int ici;
         int iwi;
         TapsError err;
+#ifdef linux
         pthread_mutex_t lock;
+#else
+		std::mutex lock;
+#endif
         std::vector<std::string> sequence;
     }SequenceStructure;
 

@@ -4,7 +4,11 @@ namespace TapX
 {
 
     //Mutex
+#ifdef linux
     pthread_mutex_t motu_lock;
+#else
+	std::mutex motu_lock;
+#endif
 
     //Structure of a sequence of symbols
     SequenceStructure sequenceStruct;
@@ -13,7 +17,11 @@ namespace TapX
     SymbolPlayedCallback previousSymbolCallback = 0;
 
     //Is motu playing
+#ifdef linux
     pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+#else
+	std::condition_variable condition;
+#endif
 
     //NULL instance
     MotuPlayer* MotuPlayer::instance = 0;
@@ -31,7 +39,9 @@ namespace TapX
     //Destructor
     MotuPlayer::~MotuPlayer()
     {
+#ifdef linux
         pthread_mutex_destroy(&motu_lock);
+#endif
         stopPlaybackSession();
     }
 
@@ -75,6 +85,10 @@ namespace TapX
     //Get files on a given path
     int MotuPlayer::intializeMap(std::string path, std::unordered_map<std::string, HapticSymbol*> &map)
     {
+		std::string csv_suffix = ".csv";
+		int numberOfSymbols = 0;
+
+#ifdef linux
         DIR *dp;
         struct dirent *dirp;
         dp = opendir(path.c_str());
@@ -84,8 +98,6 @@ namespace TapX
             return 0;
         }
 
-        std::string csv_suffix = ".csv";
-        int numberOfSymbols = 0;
         while((dirp = readdir(dp))!= NULL)
         {
             //Only the csv files 
@@ -103,7 +115,67 @@ namespace TapX
                 
         }
         closedir(dp);
-        return numberOfSymbols;
+        
+#endif
+#ifdef _WIN32
+		std::string basePath = "";
+		std::vector<wchar_t> pathBuf;
+		DWORD copied = 0;
+		do {
+			pathBuf.resize(pathBuf.size() + MAX_PATH);
+			copied = GetModuleFileNameW(0, &pathBuf.at(0), pathBuf.size());
+		} while (copied >= pathBuf.size());
+
+		pathBuf.resize(copied);
+		std::string fullPath(pathBuf.begin(), pathBuf.end());
+		std::string::size_type pos = std::string(fullPath).find_last_of("\\/");
+		basePath = std::string(fullPath).substr(0, pos) + path;
+
+
+		DWORD dwError = 0;
+		WIN32_FIND_DATA ffd;
+		TCHAR szDir[MAX_PATH];
+		HANDLE hFind = INVALID_HANDLE_VALUE;
+
+		StringCchCopy(szDir, MAX_PATH, basePath.c_str());
+		StringCchCat(szDir, MAX_PATH, TEXT("\\*"));
+
+		// Find the first file in the directory.
+
+		hFind = FindFirstFile(szDir, &ffd);
+
+		if (INVALID_HANDLE_VALUE == hFind)
+		{
+			printf("No files on path\n");
+			return 0;
+		}
+
+		// For all the csv files in the directory 
+		do
+		{
+			std::string file_name(ffd.cFileName);
+			if (file_name.size() >= csv_suffix.size() &&
+				file_name.compare(file_name.size() - csv_suffix.size(), csv_suffix.size(), csv_suffix) == 0)
+			{
+				std::string symbolName = file_name.substr(0, file_name.size() - 4);
+				HapticSymbol* symbol = new HapticSymbol(symbolName);
+				symbol->initializeData(basePath + symbolName);
+				std::pair<std::string, HapticSymbol*> newPair(symbolName, symbol);
+				map.insert(newPair);
+				numberOfSymbols++;
+			}
+		} while (FindNextFile(hFind, &ffd) != 0);
+
+		dwError = GetLastError();
+		if (dwError != ERROR_NO_MORE_FILES)
+		{
+			printf("Error closing the file reading strategy (Windows)\n");
+			return 0;
+		}
+		FindClose(hFind);
+#endif
+
+		return numberOfSymbols;
     }
 
     //Initialize dictionary with the flite mapping
@@ -324,7 +396,11 @@ namespace TapX
     void MotuPlayer::signalSymbolCallback(TapsError err)
     {
         playing = false;
+#ifdef linux
         pthread_mutex_unlock(&motu_lock);
+#else
+		motu_lock.unlock();
+#endif
         if(symbolCallback != 0)
         {
             symbolCallback(err); 
@@ -433,10 +509,17 @@ namespace TapX
     //Play a haptic symbol trying to lock MOTU
     void MotuPlayer::playHapticSymbol(std::string code)
     {
+#ifdef linux
         if(pthread_mutex_trylock(&motu_lock) == 0)
         {
             playSymbol(code);
         }
+#else
+		if (motu_lock.try_lock())
+		{
+			playSymbol(code);
+		}
+#endif
     }
 
     //Sync callback to play a sequence of symbols
@@ -444,9 +527,14 @@ namespace TapX
     void syncCallback(TapsError err)
     {
         sequenceStruct.err = err;
+#ifdef linux
         pthread_mutex_lock(&sequenceStruct.lock);
         pthread_cond_signal(&condition);
         pthread_mutex_unlock(&sequenceStruct.lock);
+#else
+		std::unique_lock<std::mutex> lock(sequenceStruct.lock);
+		condition.notify_one();
+#endif
     }
 
     //Thread process to play a sequence of symbols
@@ -463,22 +551,38 @@ namespace TapX
             std::string symbol = *it;
             if(std::string(symbol).compare("PAUSE") == 0)
             {
+#ifdef linux
                 usleep(sequenceStruct.iwi*1000);
+#else
+				std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.iwi));
+#endif
             }
             else
             {
+#ifdef linux
                 pthread_mutex_lock(&sequenceStruct.lock);
                 player->playHapticSymbol(symbol);
                 pthread_cond_wait(&condition, &sequenceStruct.lock);
                 if(it + 1 != sequenceStruct.sequence.end())
                     usleep(sequenceStruct.ici*1000);
                 pthread_mutex_unlock(&sequenceStruct.lock);
+#else
+				std::unique_lock<std::mutex> lock(sequenceStruct.lock);
+				player->playHapticSymbol(symbol);
+				condition.wait(lock);
+				if (it + 1 != sequenceStruct.sequence.end())
+					std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.ici));
+#endif
             }
             it++;
         }
         player->signalSentencePlayedCallback(sequenceStruct.err);
         player->registerSymbolPlayedCallback(previousSymbolCallback);
+#ifdef linux
         pthread_exit(NULL);
+#else
+		std::terminate();
+#endif
     }
 
     //Play a sequence of symbols including possible pauses for words
@@ -488,6 +592,7 @@ namespace TapX
         sequenceStruct.ici = ici;
         sequenceStruct.iwi = iwi;
         sequenceStruct.err = TapsNoError;
+#ifdef linux
         pthread_t thread;
         if(pthread_create(&thread, NULL, playSequenceProcess, NULL) == 0)
         {
@@ -497,6 +602,10 @@ namespace TapX
         {
             printf("Could not create the thread process\n");
         }
+#else
+		std::thread thread(playSequenceProcess, NULL);
+		thread.detach();
+#endif
         
     }
 
@@ -519,6 +628,7 @@ namespace TapX
     //Get the raw phoneme transcription of flite as a string 
     std::string MotuPlayer::getRawFlitePhonemes(std::string sentence)
     {
+#ifdef linux
         std::array<char, 128> buffer;
         std::string result;
         std::string command = "flite -t \"" + sentence + "\" -ps -o none";
@@ -541,6 +651,10 @@ namespace TapX
             result.erase(result.length()-1);
 
         return result;
+#else
+		//TODO: Windows implementation
+		return "P";
+#endif
 
     }
 
