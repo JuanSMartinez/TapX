@@ -537,9 +537,10 @@ namespace TapX
 #endif
     }
 
-    //Thread process to play a sequence of symbols
+    //Thread process to play a sequence of symbols in linux
     //NOTE: this is not a method of the player class
-    void* playSequenceProcess(void* data)
+#ifdef linux
+    void* playSequenceProcessLinux(void* data)
     {
         MotuPlayer* player = MotuPlayer::getInstance();
         previousSymbolCallback = player->getRegisteredSymbolCallback();
@@ -551,39 +552,58 @@ namespace TapX
             std::string symbol = *it;
             if(std::string(symbol).compare("PAUSE") == 0)
             {
-#ifdef linux
                 usleep(sequenceStruct.iwi*1000);
-#else
-				std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.iwi));
-#endif
             }
             else
             {
-#ifdef linux
                 pthread_mutex_lock(&sequenceStruct.lock);
                 player->playHapticSymbol(symbol);
                 pthread_cond_wait(&condition, &sequenceStruct.lock);
                 if(it + 1 != sequenceStruct.sequence.end())
                     usleep(sequenceStruct.ici*1000);
                 pthread_mutex_unlock(&sequenceStruct.lock);
-#else
-				std::unique_lock<std::mutex> lock(sequenceStruct.lock);
-				player->playHapticSymbol(symbol);
-				condition.wait(lock);
-				if (it + 1 != sequenceStruct.sequence.end())
-					std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.ici));
-#endif
             }
             it++;
         }
         player->signalSentencePlayedCallback(sequenceStruct.err);
         player->registerSymbolPlayedCallback(previousSymbolCallback);
-#ifdef linux
         pthread_exit(NULL);
-#else
-		std::terminate();
-#endif
     }
+#endif
+
+	//Thread process to play a sequence of symbols in Windows
+	//NOTE: this is not a method of the player class
+#ifdef _WIN32
+	void playSequenceProcessWin()
+	{
+		MotuPlayer* player = MotuPlayer::getInstance();
+		previousSymbolCallback = player->getRegisteredSymbolCallback();
+		player->registerSymbolPlayedCallback(syncCallback);
+		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
+
+		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
+		{
+			std::string symbol = *it;
+			if (std::string(symbol).compare("PAUSE") == 0)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.iwi));
+			}
+			else
+			{
+				std::unique_lock<std::mutex> lock(sequenceStruct.lock);
+				player->playHapticSymbol(symbol);
+				condition.wait(lock);
+				if (it + 1 != sequenceStruct.sequence.end())
+					std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.ici));
+			}
+			it++;
+		}
+		player->signalSentencePlayedCallback(sequenceStruct.err);
+		player->registerSymbolPlayedCallback(previousSymbolCallback);
+		std::terminate();
+	}
+#endif
+
 
     //Play a sequence of symbols including possible pauses for words
     void MotuPlayer::playSequence(std::vector<std::string> sequence, int ici, int iwi)
@@ -594,7 +614,7 @@ namespace TapX
         sequenceStruct.err = TapsNoError;
 #ifdef linux
         pthread_t thread;
-        if(pthread_create(&thread, NULL, playSequenceProcess, NULL) == 0)
+        if(pthread_create(&thread, NULL, playSequenceProcessLinux, NULL) == 0)
         {
             pthread_detach(thread);
         }
@@ -603,7 +623,7 @@ namespace TapX
             printf("Could not create the thread process\n");
         }
 #else
-		std::thread thread(playSequenceProcess, NULL);
+		std::thread thread(playSequenceProcessWin);
 		thread.detach();
 #endif
         

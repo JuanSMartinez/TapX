@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TapXCLI", "TapXCLI\TapXCLI.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TapXCore", "TapXCore\TapXCore.vcxproj", "{FB06AE48-DD0A-4F26-81BE-930E7CEA4C89}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreTests", "CoreTests\CoreTests.vcxproj", "{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{FB06AE48-DD0A-4F26-81BE-930E7CEA4C89}.Release|x64.Build.0 = Release|x64
 		{FB06AE48-DD0A-4F26-81BE-930E7CEA4C89}.Release|x86.ActiveCfg = Release|Win32
 		{FB06AE48-DD0A-4F26-81BE-930E7CEA4C89}.Release|x86.Build.0 = Release|Win32
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Debug|x64.ActiveCfg = Debug|x64
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Debug|x64.Build.0 = Debug|x64
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Debug|x86.ActiveCfg = Debug|Win32
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Debug|x86.Build.0 = Debug|Win32
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Release|x64.ActiveCfg = Release|x64
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Release|x64.Build.0 = Release|x64
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Release|x86.ActiveCfg = Release|Win32
+		{5FC78572-1F0B-48EF-A541-67D1DCFFF87D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
