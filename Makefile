@@ -1,6 +1,7 @@
 SRC_DIR=src/
 BUILD_DIR=build/
-LIBS=lib/libportaudio.a -lm -lrt -lasound -pthread 
+#LIBS=lib/libportaudio.a -lm -lrt -lasound -pthread 
+LIBS=-lm -lrt -lportaudio -pthread 
 
 Test: HapticSymbol MotuPlayer
 	$(CXX) $(BUILD_DIR)HapticSymbol.o $(BUILD_DIR)MotuPlayer.o $(SRC_DIR)$(@).cpp $(LIBS) -o $(@)
