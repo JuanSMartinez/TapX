@@ -250,28 +250,34 @@ namespace TapX
         HapticSymbol* symbol = player->getCurrentPlayingSymbol();
         unsigned long i;
         (void) timeInfo; /* Prevent unused variable warnings. */
+        if(statusFlags == paInputUnderflow)
+            printf("Status: input underflow\n");
+        if(statusFlags == paInputOverflow)
+            printf("Status: input overflow\n");
+        if(statusFlags == paOutputUnderflow)
+            printf("Status: output underflow\n");
+        if(statusFlags == paOutputOverflow)
+            printf("Status: output overflow\n");
+        if(statusFlags == paPrimingOutput)
+            printf("Status: priming input\n");
+
         (void) statusFlags;
         (void) inputBuffer;
-        float v;
         int k;
-   
+
         for( i=0; i<framesPerBuffer; i++ )
         {
             for(k = 0; k < 24; k++)
             {
                 if(symbol != 0 && !symbol->matrixConsumed())
-                {
-                    v = symbol->getValueAt(symbol->getMatrixRowIndex(), k);
-                    *out++ = v;
-                }
+                    *out++ = symbol->getValueAt(symbol->getMatrixRowIndex(), k);
                 else
                     *out++ = 0.0;
             }
-            if(symbol != 0 && ! symbol->increaseIndex())
+            if(symbol!= 0 && !symbol->increaseIndex())
             {
                 player->signalSymbolCallback(TapsNoError);
                 player->currentPlayingSymbol = 0;
-                break;
             }
         }
         
