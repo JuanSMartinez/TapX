@@ -39,6 +39,7 @@ namespace TapX
     //Destructor
     MotuPlayer::~MotuPlayer()
     {
+        free(zeros);
 #ifdef linux
         pthread_mutex_destroy(&motu_lock);
 #endif
@@ -54,9 +55,16 @@ namespace TapX
         playing = false;
         symbolCallback = 0;
         sequenceCallback = 0;
+        zeros = (float*)calloc(FRAMES_PER_BUFFER, 24*sizeof(float));
         initializeData();
             
     };
+
+    //Get the zeros vector
+    float* MotuPlayer::getZeros()
+    {
+        return zeros;
+    }
 
     //Start the playback session
     void MotuPlayer::startSession()
@@ -233,46 +241,35 @@ namespace TapX
                             const PaStreamCallbackTimeInfo* timeInfo,
                             PaStreamCallbackFlags statusFlags,
                             void *userData)
-    {
-
-        if(statusFlags != 0)
-            return paContinue;
-      
+    {      
         float *out = (float*)outputBuffer;
         MotuPlayer *player = (MotuPlayer*)userData;
         HapticSymbol* symbol = player->getCurrentPlayingSymbol();
         unsigned long i;
         (void) timeInfo; /* Prevent unused variable warnings. */
-
-        // if(statusFlags == paInputUnderflow)
-        //     printf("Status: input underflow\n");
-        // if(statusFlags == paInputOverflow)
-        //     printf("Status: input overflow\n");
-        // if(statusFlags == paOutputUnderflow)
-        //     printf("Status: output underflow\n");
-        // if(statusFlags == paOutputOverflow)
-        //     printf("Status: output overflow\n");
-        // if(statusFlags == paPrimingOutput)
-        //     printf("Status: priming input\n");
-
         (void) statusFlags;
         (void) inputBuffer;
-        int k;
 
-        for( i=0; i<framesPerBuffer; i++ )
+        if(symbol != 0)
         {
-            for(k = 0; k < 24; k++)
+            unsigned long rowsRemaining = symbol->remainingRows();
+            if( rowsRemaining <= framesPerBuffer)
             {
-                if(symbol != 0 && !symbol->matrixConsumed())
-                    *out++ = symbol->getValueAt(symbol->getMatrixRowIndex(), k);
-                else
-                    *out++ = 0.0;
-            }
-            if(symbol!= 0 && !symbol->increaseIndex())
-            {
+                memcpy(out, symbol->samplesFromRow((int)symbol->getMatrixRowIndex()), sizeof(float)*rowsRemaining*24);
+                out += 24*rowsRemaining;
+                memcpy(out, player->getZeros(), sizeof(float)*24*(framesPerBuffer-rowsRemaining));
                 player->signalSymbolCallback(TapsNoError);
                 player->currentPlayingSymbol = 0;
             }
+            else
+            {
+                memcpy(out, symbol->samplesFromRow((int)symbol->getMatrixRowIndex()), sizeof(float)*framesPerBuffer*24);
+                symbol->increaseIndexBy(framesPerBuffer);
+            }
+        }
+        else
+        {
+            memcpy(out, player->getZeros(), sizeof(float)*24*framesPerBuffer);
         }
         
         return paContinue;

@@ -22,6 +22,18 @@ namespace TapX
         return matrixRowIndex;
     }
 
+    //Get the number of rows in the matrix
+    size_t HapticSymbol::getMatrixRows() const
+    {
+        return matrixRows;
+    }
+
+    //Get the number of remaining rows to be consumed from the matrix
+    size_t HapticSymbol::remainingRows()
+    {
+        return matrixRows - matrixRowIndex;
+    }
+
     //Determine if the matrix has been consumed
     bool HapticSymbol::matrixConsumed() const
     {
@@ -41,6 +53,28 @@ namespace TapX
             return false;
         }
     }
+
+    //Increase the matrix row index by a number
+    bool HapticSymbol:: increaseIndexBy(int increase)
+    {
+        if(matrixRowIndex + increase < matrixRows)
+        {
+            matrixRowIndex = matrixRowIndex + increase;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+        
+    }
+
+    //Return a pointer to the data in the matrix starting at a row
+    float* HapticSymbol::samplesFromRow(int row)
+    {
+        return &dataMatrix[24*row];
+    }
+            
 
     //Get value of the matrix at a certain position
     float HapticSymbol::getValueAt(int i, int j)

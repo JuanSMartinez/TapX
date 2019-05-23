@@ -93,6 +93,7 @@ namespace TapX
             SequencePlayedCallback sequenceCallback;
             HapticSymbol* currentPlayingSymbol;
             PaStream* stream;
+            float *zeros;
 
             MotuPlayer();
             void initializeData();
@@ -117,6 +118,7 @@ namespace TapX
         public:
             ~MotuPlayer();
             static MotuPlayer* getInstance();
+            float* getZeros();
             void startSession();
             bool successfulStart();
             void registerSymbolPlayedCallback(SymbolPlayedCallback callback);
