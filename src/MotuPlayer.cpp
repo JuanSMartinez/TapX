@@ -234,22 +234,26 @@ namespace TapX
                             PaStreamCallbackFlags statusFlags,
                             void *userData)
     {
+
+        if(statusFlags != 0)
+            return paContinue;
       
         float *out = (float*)outputBuffer;
         MotuPlayer *player = (MotuPlayer*)userData;
         HapticSymbol* symbol = player->getCurrentPlayingSymbol();
         unsigned long i;
         (void) timeInfo; /* Prevent unused variable warnings. */
-        if(statusFlags == paInputUnderflow)
-            printf("Status: input underflow\n");
-        if(statusFlags == paInputOverflow)
-            printf("Status: input overflow\n");
-        if(statusFlags == paOutputUnderflow)
-            printf("Status: output underflow\n");
-        if(statusFlags == paOutputOverflow)
-            printf("Status: output overflow\n");
-        if(statusFlags == paPrimingOutput)
-            printf("Status: priming input\n");
+
+        // if(statusFlags == paInputUnderflow)
+        //     printf("Status: input underflow\n");
+        // if(statusFlags == paInputOverflow)
+        //     printf("Status: input overflow\n");
+        // if(statusFlags == paOutputUnderflow)
+        //     printf("Status: output underflow\n");
+        // if(statusFlags == paOutputOverflow)
+        //     printf("Status: output overflow\n");
+        // if(statusFlags == paPrimingOutput)
+        //     printf("Status: priming input\n");
 
         (void) statusFlags;
         (void) inputBuffer;
@@ -295,7 +299,7 @@ namespace TapX
                 motu = i;
         }
         if(motu != paNoDevice){
-            printf("Found MOTU with name %s and channels %d\n", Pa_GetDeviceInfo(motu)->name, Pa_GetDeviceInfo(motu)->maxOutputChannels);
+            printf("Found MOTU with name %s and %d channels\n", Pa_GetDeviceInfo(motu)->name, Pa_GetDeviceInfo(motu)->maxOutputChannels);
         }
         return motu;
     }
