@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <portaudio.h>
 #endif
 
 #ifdef _WIN32
@@ -12,11 +13,11 @@
 #include <strsafe.h>
 #include <thread>
 #include <mutex>
+#include "../inc/portaudio.h"
 #endif
 
 #include <sys/types.h>
 #include <errno.h>
-#include "../inc/portaudio.h"
 #include <string.h>
 #include <array>
 #include <cstdio>
