@@ -4,7 +4,7 @@ namespace TapX
 {
 
     //Mutex
-#ifdef linux
+#ifdef __linux__
     pthread_mutex_t motu_lock;
 #else
 	std::mutex motu_lock;
@@ -17,7 +17,7 @@ namespace TapX
     SymbolPlayedCallback previousSymbolCallback = 0;
 
     //Is motu playing
-#ifdef linux
+#ifdef __linux__
     pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
 #else
 	std::condition_variable condition;
@@ -402,7 +402,7 @@ namespace TapX
     void MotuPlayer::signalSymbolCallback(TapsError err)
     {
         playing = false;
-#ifdef linux
+#ifdef __linux__
         pthread_mutex_unlock(&motu_lock);
 #else
 		motu_lock.unlock();
@@ -515,7 +515,7 @@ namespace TapX
     //Play a haptic symbol trying to lock MOTU
     void MotuPlayer::playHapticSymbol(std::string code)
     {
-#ifdef linux
+#ifdef __linux__
         if(pthread_mutex_trylock(&motu_lock) == 0)
         {
             playSymbol(code);
@@ -533,7 +533,7 @@ namespace TapX
     void syncCallback(TapsError err)
     {
         sequenceStruct.err = err;
-#ifdef linux
+#ifdef __linux__
         pthread_mutex_lock(&sequenceStruct.lock);
         pthread_cond_signal(&condition);
         pthread_mutex_unlock(&sequenceStruct.lock);
@@ -545,7 +545,7 @@ namespace TapX
 
     //Thread process to play a sequence of symbols in linux
     //NOTE: this is not a method of the player class
-#ifdef linux
+#ifdef __linux__
     void* playSequenceProcessLinux(void* data)
     {
         MotuPlayer* player = MotuPlayer::getInstance();
@@ -618,7 +618,7 @@ namespace TapX
         sequenceStruct.ici = ici;
         sequenceStruct.iwi = iwi;
         sequenceStruct.err = TapsNoError;
-#ifdef linux
+#ifdef __linux__
         pthread_t thread;
         if(pthread_create(&thread, NULL, playSequenceProcessLinux, NULL) == 0)
         {

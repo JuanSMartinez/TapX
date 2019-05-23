@@ -1,7 +1,7 @@
 #pragma once
 #include "HapticSymbol.hpp"
 #include <unordered_map>
-#ifdef linux
+#ifdef __linux__
 #include <dirent.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -69,7 +69,7 @@ namespace TapX
         int ici;
         int iwi;
         TapsError err;
-#ifdef linux
+#ifdef __linux__
         pthread_mutex_t lock;
 #else
 		std::mutex lock;
