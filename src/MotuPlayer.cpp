@@ -323,7 +323,7 @@ namespace TapX
 
         outputParameters.channelCount = 24;       
         outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-        outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
+        outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
         outputParameters.hostApiSpecificStreamInfo = NULL;
 
         err = Pa_OpenStream(
@@ -401,10 +401,6 @@ namespace TapX
         if(symbolCallback != 0)
         {
             symbolCallback(err); 
-        }
-        else
-        {
-            printf("No callback registered, played symbol with code %d\n", err);
         }
         
     }
