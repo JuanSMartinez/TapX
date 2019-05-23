@@ -64,21 +64,11 @@ namespace TapX
         //Try to start the playback session
         TapsError err = startPlaybackSession();
         sessionStarted = err == TapsNoError;
-        int attempts = 0;
-
-        while (!sessionStarted && attempts < 3)
-        {
-            printf("ERROR: Attempt %d, could not start playback session with code %d\n", attempts, err);
-            err = startPlaybackSession();
-            sessionStarted = err == TapsNoError;
-            attempts ++;
-        }
-
         if(sessionStarted)
             printf("Playback session started successfuly\n");
         else
         {
-            printf("ERROR: Could not start playback session after 3 attempts\n");
+            printf("ERROR: Could not start playback session\n");
         }
     }
 
