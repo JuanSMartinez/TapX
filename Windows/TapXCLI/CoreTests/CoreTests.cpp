@@ -1,16 +1,88 @@
 // CoreTests.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-
+#pragma warning(disable : 4996)
 #include "pch.h"
 #include <iostream>
+#include "MotuPlayer.hpp"
 
-int playIndividualPhonemes()
+void testSymbolCallback(TapX::TapsError err)
 {
-	return 0;
+	printf("External callback used, played symbol with code %d\n", err);
+}
+
+void testSequenceCallback(TapX::TapsError err)
+{
+	printf("External callback for sequence used, played sequence with code %d\n", err);
+}
+
+int playSequenceOfSymbols()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	player->startSession();
+	player->registerSequencePlayedCallback(testSequenceCallback);
+	if (player->successfulStart())
+	{
+		char buff[64];
+		printf("Type a sequence of symbols separated by comas and ICI at the end or 'xx' to exit\n");
+		scanf("%64s", buff);
+		std::vector<std::string> vector;
+		while (std::string(buff).compare("xx") != 0)
+		{
+			vector.clear();
+			std::string typed(buff);
+
+			size_t pos = 0;
+			std::string token;
+			std::string delimiter = ",";
+			while ((pos = typed.find(delimiter)) != std::string::npos)
+			{
+				token = typed.substr(0, pos);
+				vector.push_back(token);
+				typed.erase(0, pos + delimiter.length());
+			}
+			int ici = (int)strtol(typed.c_str(), NULL, 10);
+
+			printf("Playing sequence of symbols with %d ms ICI\n", ici);
+			player->playSymbolSequence(vector, ici);
+
+			printf("Type a sequence of symbols separated by comas and ICI at the end or 'xx' to exit\n");
+			scanf("%64s", buff);
+		}
+		delete player;
+		return 0;
+
+	}
+	return -1;
+}
+
+int playIndividualSymbols()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	player->startSession();
+	player->registerSymbolPlayedCallback(testSymbolCallback);
+	if (player->successfulStart())
+	{
+		char buff[5];
+		printf("Type a symbol label or 'xx' to exit\n");
+		scanf("%5s", buff);
+		while (std::string(buff).compare("xx") != 0)
+		{
+			player->playHapticSymbol(std::string(buff));
+
+			printf("Type a phoneme label to play or 'xx' to exit\n");
+			scanf("%5s", buff);
+		}
+		delete player;
+		return 0;
+	}
+	printf("Did not start\n");
+	return -1;
 }
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	//return playIndividualSymbols();
+	return playSequenceOfSymbols();
+	
 }
 

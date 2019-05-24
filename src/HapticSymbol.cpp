@@ -86,7 +86,6 @@ namespace TapX
     void HapticSymbol::initializeData(std::string dataPath)
     {
         std::string path = dataPath + id + ".csv";
-
         std::vector<std::string> vector;
         std::string line;
         std::ifstream file;

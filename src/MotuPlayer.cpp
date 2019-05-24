@@ -55,7 +55,7 @@ namespace TapX
         playing = false;
         symbolCallback = 0;
         sequenceCallback = 0;
-        zeros = (float*)calloc(FRAMES_PER_BUFFER, 24*sizeof(float));
+        zeros = (float*)calloc(24 * FRAMES_PER_BUFFER, sizeof(float));
         initializeData();
             
     };
@@ -76,7 +76,7 @@ namespace TapX
             printf("Playback session started successfuly\n");
         else
         {
-            printf("ERROR: Could not start playback session\n");
+            printf("ERROR: Could not start playback session, error code: %d\n", err);
         }
     }
 
@@ -157,7 +157,7 @@ namespace TapX
 			{
 				std::string symbolName = file_name.substr(0, file_name.size() - 4);
 				HapticSymbol* symbol = new HapticSymbol(symbolName);
-				symbol->initializeData(basePath + symbolName);
+				symbol->initializeData(basePath);
 				std::pair<std::string, HapticSymbol*> newPair(symbolName, symbol);
 				map.insert(newPair);
 				numberOfSymbols++;
@@ -289,11 +289,20 @@ namespace TapX
         PaDeviceIndex motu = paNoDevice;
         for(int i = 0; i < numDevices; i++){
             deviceInfo = Pa_GetDeviceInfo(i);
+#ifdef __linux__
             const char* name = deviceInfo->name;
             const char* substr = "24Ao";
 
             if( deviceInfo->maxOutputChannels == 24 && strstr(name, substr) != NULL)
                 motu = i;
+#else
+			std::string motuName("MOTU Pro Audio");
+			std::string deviceName(deviceInfo->name);
+			if (deviceInfo->maxOutputChannels == 24 && deviceName.compare(motuName) == 0)
+			{
+				motu = i;
+			}
+#endif
         }
         if(motu != paNoDevice){
             printf("Found MOTU with name %s and %d channels\n", Pa_GetDeviceInfo(motu)->name, Pa_GetDeviceInfo(motu)->maxOutputChannels);
@@ -323,7 +332,7 @@ namespace TapX
 
         outputParameters.channelCount = 24;       
         outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-        outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
+        outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
         outputParameters.hostApiSpecificStreamInfo = NULL;
 
         err = Pa_OpenStream(
@@ -396,7 +405,7 @@ namespace TapX
 #ifdef __linux__
         pthread_mutex_unlock(&motu_lock);
 #else
-		motu_lock.unlock();
+		//motu_lock.unlock();
 #endif
         if(symbolCallback != 0)
         {
@@ -508,10 +517,10 @@ namespace TapX
             playSymbol(code);
         }
 #else
-		if (motu_lock.try_lock())
-		{
+		//if (motu_lock.try_lock())
+		//{
 			playSymbol(code);
-		}
+		//}
 #endif
     }
 
@@ -593,7 +602,7 @@ namespace TapX
 		}
 		player->signalSentencePlayedCallback(sequenceStruct.err);
 		player->registerSymbolPlayedCallback(previousSymbolCallback);
-		std::terminate();
+		
 	}
 #endif
 
