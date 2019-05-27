@@ -249,13 +249,15 @@ namespace TapX
         (void) timeInfo; /* Prevent unused variable warnings. */
         (void) statusFlags;
         (void) inputBuffer;
-
         if(symbol != 0)
         {
             unsigned long rowsRemaining = symbol->remainingRows();
             if( rowsRemaining <= framesPerBuffer)
             {
+                //Copy the remaining samples into the buffer
                 memcpy(out, symbol->samplesFromRow((int)symbol->getMatrixRowIndex()), sizeof(float)*rowsRemaining*24);
+
+                //Fill the rest of the buffer with zeros
                 out += 24*rowsRemaining;
                 memcpy(out, player->getZeros(), sizeof(float)*24*(framesPerBuffer-rowsRemaining));
                 player->signalSymbolCallback(TapsNoError);
@@ -263,6 +265,7 @@ namespace TapX
             }
             else
             {
+                //Fill all the frames of the buffer with data from matrix and increase the index by the frames consumed
                 memcpy(out, symbol->samplesFromRow((int)symbol->getMatrixRowIndex()), sizeof(float)*framesPerBuffer*24);
                 symbol->increaseIndexBy(framesPerBuffer);
             }
@@ -331,7 +334,7 @@ namespace TapX
         }
 
         outputParameters.channelCount = 24;       
-        outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
+        outputParameters.sampleFormat = paFloat32;
         outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
         outputParameters.hostApiSpecificStreamInfo = NULL;
 
