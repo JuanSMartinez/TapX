@@ -7,7 +7,8 @@ namespace TapX
 #ifdef __linux__
     pthread_mutex_t motu_lock;
 #else
-	std::mutex motu_lock;
+	bool motu_lock = false;
+	//std::mutex motu_lock;
 #endif
 
     //Structure of a sequence of symbols
@@ -424,7 +425,7 @@ namespace TapX
 #ifdef __linux__
         pthread_mutex_unlock(&motu_lock);
 #else
-		//motu_lock.unlock();
+		motu_lock = false;
 #endif
         if(symbolCallback != 0)
         {
@@ -536,10 +537,11 @@ namespace TapX
             playSymbol(code);
         }
 #else
-		//if (motu_lock.try_lock())
-		//{
+		if (!motu_lock)
+		{
+			motu_lock = true;
 			playSymbol(code);
-		//}
+		}
 #endif
     }
 
@@ -644,8 +646,10 @@ namespace TapX
             printf("Could not create the thread process\n");
         }
 #else
+
 		std::thread thread(playSequenceProcessWin);
 		thread.detach();
+		
 #endif
         
     }
