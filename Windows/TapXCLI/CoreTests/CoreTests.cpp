@@ -14,6 +14,79 @@ void testSequenceCallback(TapX::TapsError err)
 {
 	printf("External callback for sequence used, played sequence with code %d\n", err);
 }
+int playSentence()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
+	player->startSession();
+	player->registerSequencePlayedCallback(testSequenceCallback);
+	if (player->successfulStart())
+	{
+		char buff[64];
+		std::vector<std::string> result;
+		std::vector<std::string>::iterator it;
+		printf("Type a sentence to play or 'xx' to exit\n");
+		fgets(buff, 64, stdin);
+		if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+			buff[strlen(buff) - 1] = '\0';
+		while (std::string(buff).compare("xx") != 0)
+		{
+			std::string typed(buff);
+
+			player->playEnglishSentence(typed, 150, 1500);
+
+			printf("Type a sentence to play or 'xx' to exit\n");
+			fgets(buff, 64, stdin);
+			if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+				buff[strlen(buff) - 1] = '\0';
+		}
+		delete player;
+		return 0;
+
+	}
+	return -1;
+}
+
+
+int getPhonemes()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
+	player->startSession();
+	std::vector<std::string> result;
+	if (player->successfulStart())
+	{
+		char buff[64];
+		std::vector<std::string>::iterator it;
+		printf("Type a sentence or 'xx' to exit\n");
+		fgets(buff, 64, stdin);
+		if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+			buff[strlen(buff) - 1] = '\0';
+		while (std::string(buff).compare("xx") != 0)
+		{
+			std::string typed(buff);
+			result.clear();
+			player->getPhonemesOfSentence(&result, typed);
+
+			it = result.begin();
+			while (it != result.end())
+			{
+				printf("Phoneme: %s\n", (*it).c_str());
+				it++;
+			}
+
+
+			printf("Type a sentence or 'xx' to exit\n");
+			fgets(buff, 64, stdin);
+			if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+				buff[strlen(buff) - 1] = '\0';
+		}
+		delete player;
+		return 0;
+
+	}
+	return -1;
+}
 
 int getFlitePhonemes()
 {
@@ -117,7 +190,9 @@ int main()
 {
 	//return playIndividualSymbols();
 	//return playSequenceOfSymbols();
-	return getFlitePhonemes();
+	//return getFlitePhonemes();
+	//return getPhonemes();
+	return playSentence();
 	
 }
 

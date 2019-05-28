@@ -181,17 +181,33 @@ namespace TapX
     {
         std::string line;
         std::ifstream file;
+#ifdef __linux__
         file.open(FLITE_MAP_PATH);
+#else
+		std::string basePath = "";
+		std::vector<wchar_t> pathBuf;
+		DWORD copied = 0;
+		do {
+			pathBuf.resize(pathBuf.size() + MAX_PATH);
+			copied = GetModuleFileNameW(0, &pathBuf.at(0), pathBuf.size());
+		} while (copied >= pathBuf.size());
+
+		pathBuf.resize(copied);
+		std::string fullPath(pathBuf.begin(), pathBuf.end());
+		std::string::size_type pos = std::string(fullPath).find_last_of("\\/");
+		basePath = std::string(fullPath).substr(0, pos) + FLITE_MAP_PATH;
+		file.open(basePath);
+#endif
         std::string delimiter = ",";
         std::string first;
         std::string second;
-        size_t pos = 0;
+        size_t pos_f = 0;
         while(file.good())
         {
             getline(file,line);
-            pos = line.find(delimiter);
-            first = line.substr(0, pos);
-            second = line.substr(pos+1, line.size());
+			pos_f = line.find(delimiter);
+            first = line.substr(0, pos_f);
+            second = line.substr(pos_f +1, line.size());
             
             std::pair<std::string, std::string> newPair (first, second);
             fliteMapping.insert(newPair);
