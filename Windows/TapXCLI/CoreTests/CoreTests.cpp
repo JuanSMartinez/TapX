@@ -15,9 +15,42 @@ void testSequenceCallback(TapX::TapsError err)
 	printf("External callback for sequence used, played sequence with code %d\n", err);
 }
 
+int getFlitePhonemes()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
+	player->startSession();
+	if (player->successfulStart())
+	{
+		char buff[64];
+		std::string result;
+		printf("Type a sentence or 'xx' to exit\n");
+		fgets(buff, 64, stdin);
+		if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+			buff[strlen(buff) - 1] = '\0';
+		while (std::string(buff).compare("xx") != 0)
+		{
+			std::string typed(buff);
+
+			result = player->getRawFlitePhonemes(typed);
+			printf("Result: -%s-\n", result.c_str());
+
+			printf("Type a sentence or 'xx' to exit\n");
+			fgets(buff, 64, stdin);
+			if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+				buff[strlen(buff) - 1] = '\0';
+		}
+		delete player;
+		return 0;
+
+	}
+	return -1;
+}
+
 int playSequenceOfSymbols()
 {
 	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
 	player->startSession();
 	player->registerSequencePlayedCallback(testSequenceCallback);
 	if (player->successfulStart())
@@ -58,6 +91,7 @@ int playSequenceOfSymbols()
 int playIndividualSymbols()
 {
 	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
 	player->startSession();
 	player->registerSymbolPlayedCallback(testSymbolCallback);
 	if (player->successfulStart())
@@ -82,7 +116,8 @@ int playIndividualSymbols()
 int main()
 {
 	//return playIndividualSymbols();
-	return playSequenceOfSymbols();
+	//return playSequenceOfSymbols();
+	return getFlitePhonemes();
 	
 }
 

@@ -653,10 +653,11 @@ namespace TapX
     //Get the raw phoneme transcription of flite as a string 
     std::string MotuPlayer::getRawFlitePhonemes(std::string sentence)
     {
-#ifdef linux
-        std::array<char, 128> buffer;
-        std::string result;
-        std::string command = "flite -t \"" + sentence + "\" -ps -o none";
+		std::string result;
+		std::string command = "flite -t \"" + sentence + "\" -ps -o none";
+#ifdef __linux__
+        std::array<char, 1024> buffer;
+    
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe) {
             throw std::runtime_error("popen() failed!");
@@ -677,8 +678,43 @@ namespace TapX
 
         return result;
 #else
-		//TODO: Windows implementation
-		return "P";
+
+		char   psBuffer[1024];
+		FILE   *pPipe;
+
+		/* Run DIR so that it writes its output to a pipe. Open this
+		 * pipe with read text attribute so that we can read it
+		 * like a text file.
+		 */
+		if ((pPipe = _popen(command.c_str(), "rt")) == NULL)
+			return "";
+
+		/* Read pipe until end of file, or an error occurs. */
+
+		while (fgets(psBuffer, 1024, pPipe));
+
+		/* Close pipe  */
+		if (feof(pPipe))
+		{
+			result = std::string(psBuffer);
+
+			//Remove last newline character
+			result.erase(result.length() - 1);
+
+			//Remove first and last "pau" symbols and the corresponding spaces
+			int i;
+			for (i = 0; i < 4; i++)
+				result.erase(result.begin());
+			for (i = 0; i < 5; i++)
+				result.erase(result.length() - 1);
+
+			return result;
+		}
+		else
+		{
+			printf("Error: Failed to read the pipe to the end.\n");
+			return "";
+		}
 #endif
 
     }
