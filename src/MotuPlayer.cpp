@@ -597,7 +597,7 @@ namespace TapX
 	//Thread process to play a sequence of symbols in Windows
 	//NOTE: this is not a method of the player class
 #ifdef _WIN32
-	void playSequenceProcessWin()
+	DWORD playSequenceProcessWin(LPVOID lpParam)
 	{
 		MotuPlayer* player = MotuPlayer::getInstance();
 		previousSymbolCallback = player->getRegisteredSymbolCallback();
@@ -647,8 +647,11 @@ namespace TapX
         }
 #else
 
-		std::thread thread(playSequenceProcessWin);
-		thread.detach();
+		DWORD threadId;
+		HANDLE threadHandle = CreateThread(NULL, 0, playSequenceProcessWin, NULL, 0, &threadId);
+
+		//std::thread thread(playSequenceProcessWin);
+		//thread.detach();
 		
 #endif
         
