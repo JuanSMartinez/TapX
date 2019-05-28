@@ -623,7 +623,7 @@ namespace TapX
 		}
 		player->signalSentencePlayedCallback(sequenceStruct.err);
 		player->registerSymbolPlayedCallback(previousSymbolCallback);
-		
+		return 0;
 	}
 #endif
 
