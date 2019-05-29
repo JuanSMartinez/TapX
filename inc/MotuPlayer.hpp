@@ -61,8 +61,8 @@ namespace TapX
     };
 
     //Types of callbacks that can be registered
-    typedef void (*SymbolPlayedCallback)(TapsError);
-    typedef void (*SequencePlayedCallback)(TapsError);
+    typedef void (__stdcall *SymbolPlayedCallback)(TapsError);
+    typedef void (__stdcall *SequencePlayedCallback)(TapsError);
 
     //Structure for a sequence of symbols
     typedef struct 

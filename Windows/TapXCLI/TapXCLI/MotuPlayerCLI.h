@@ -4,10 +4,12 @@ using namespace System;
 using namespace TapX;
 
 namespace TapXCLI {
+
 	public ref class MotuPlayerCLI
 	{
 	protected:
 		MotuPlayer* playerInstance;
+
 	public:
 
 		//Constructor
@@ -19,11 +21,11 @@ namespace TapXCLI {
 		//Finalizer
 		!MotuPlayerCLI();
 
-		//Return the instance of the underlying player
-		MotuPlayer* GetInstance();
-
 		//Did the session start correctly
 		bool SessionStarted();
+
+		//Play a haptic symbol 
+		void PlayHapticSymbol(String^ code);
 
 	};
 }

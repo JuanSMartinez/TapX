@@ -9,6 +9,11 @@ namespace WrapperSandbox
 {
     class Program
     {
+        void SymbolCallbak(int err)
+        {
+            Console.WriteLine("Played with code " + err);
+        }
+
         static void Main(string[] args)
         {
             Console.WriteLine("Creating player...");
@@ -16,6 +21,9 @@ namespace WrapperSandbox
             Console.WriteLine("Created player");
 
             Console.WriteLine("Session started? " + player.SessionStarted());
+
+            player.PlayHapticSymbol("OO");
+
             Console.Read();
         }
     }

@@ -76,14 +76,17 @@ namespace TapX
     void MotuPlayer::startSession()
     {
         //Try to start the playback session
-        TapsError err = startPlaybackSession();
-        sessionStarted = err == TapsNoError;
-        if(sessionStarted)
-            printf("Playback session started successfuly\n");
-        else
-        {
-            printf("ERROR: Could not start playback session, error code: %d\n", err);
-        }
+		if (!sessionStarted)
+		{
+			TapsError err = startPlaybackSession();
+			sessionStarted = err == TapsNoError;
+			if (sessionStarted)
+				printf("Playback session started successfuly\n");
+			else
+			{
+				printf("ERROR: Could not start playback session, error code: %d\n", err);
+			}
+		}
     }
 
     //Get files on a given path
@@ -417,6 +420,7 @@ namespace TapX
         }
 
         Pa_Terminate();
+		sessionStarted = false;
         return TapsNoError;
     }
 
