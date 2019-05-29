@@ -110,11 +110,11 @@ namespace TapX
             while(pos != std::string::npos){
                 value = row.substr(0,pos);
                 row.erase(0, pos + 1);
-                dataMatrix[i*24 + j] = atof(value.c_str());
+                dataMatrix[i*24 + j] = (float)atof(value.c_str());
                 j++;
                 pos = row.find(",");
             }
-            dataMatrix[i*24 + j] = atof(row.c_str());
+            dataMatrix[i*24 + j] = (float)atof(row.c_str());
         }
     }
     

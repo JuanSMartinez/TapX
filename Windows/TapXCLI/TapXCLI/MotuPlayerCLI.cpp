@@ -1,36 +1,38 @@
 #include "MotuPlayerCLI.h"
 
-using namespace TapXCLI;
-
-//Constructor
-MotuPlayerCLI::MotuPlayerCLI()
+namespace TapXCLI
 {
-	playerInstance = MotuPlayer::getInstance();
-	playerInstance->startSession();
-}
 
-//Destructor
-MotuPlayerCLI::~MotuPlayerCLI()
-{
-	if (playerInstance != nullptr)
-		delete playerInstance;
-}
+	//Constructor
+	MotuPlayerCLI::MotuPlayerCLI()
+	{
+		playerInstance = MotuPlayer::getInstance();
+		playerInstance->startSession();
+	}
 
-//Finalizer
-MotuPlayerCLI::!MotuPlayerCLI()
-{
-	if (playerInstance != nullptr)
-		delete playerInstance;
-}
+	//Destructor
+	MotuPlayerCLI::~MotuPlayerCLI()
+	{
+		if (playerInstance != nullptr)
+			delete playerInstance;
+	}
 
-//Get the underlying instance of the player
-MotuPlayer*  MotuPlayerCLI::GetInstance()
-{
-	return playerInstance;
-}
+	//Finalizer
+	MotuPlayerCLI::!MotuPlayerCLI()
+	{
+		if (playerInstance != nullptr)
+			delete playerInstance;
+	}
 
-//Did the session start correctly
-bool MotuPlayerCLI::SessionStarted()
-{
-	return playerInstance->successfulStart();
+	//Get the underlying instance of the player
+	MotuPlayer*  MotuPlayerCLI::GetInstance()
+	{
+		return playerInstance;
+	}
+
+	//Did the session start correctly
+	bool MotuPlayerCLI::SessionStarted()
+	{
+		return playerInstance->successfulStart();
+	}
 }

@@ -127,7 +127,7 @@ namespace TapX
 		DWORD copied = 0;
 		do {
 			pathBuf.resize(pathBuf.size() + MAX_PATH);
-			copied = GetModuleFileNameW(0, &pathBuf.at(0), pathBuf.size());
+			copied = (DWORD)GetModuleFileNameW(0, &pathBuf.at(0), pathBuf.size());
 		} while (copied >= pathBuf.size());
 
 		pathBuf.resize(copied);
@@ -195,7 +195,7 @@ namespace TapX
 		DWORD copied = 0;
 		do {
 			pathBuf.resize(pathBuf.size() + MAX_PATH);
-			copied = GetModuleFileNameW(0, &pathBuf.at(0), pathBuf.size());
+			copied = (DWORD)GetModuleFileNameW(0, &pathBuf.at(0), pathBuf.size());
 		} while (copied >= pathBuf.size());
 
 		pathBuf.resize(copied);
@@ -267,13 +267,12 @@ namespace TapX
         float *out = (float*)outputBuffer;
         MotuPlayer *player = (MotuPlayer*)userData;
         HapticSymbol* symbol = player->getCurrentPlayingSymbol();
-        unsigned long i;
         (void) timeInfo; /* Prevent unused variable warnings. */
         (void) statusFlags;
         (void) inputBuffer;
         if(symbol != 0)
         {
-            unsigned long rowsRemaining = symbol->remainingRows();
+            unsigned long rowsRemaining = (unsigned long)symbol->remainingRows();
             if( rowsRemaining <= framesPerBuffer)
             {
                 //Copy the remaining samples into the buffer
@@ -312,16 +311,21 @@ namespace TapX
         int numDevices = Pa_GetDeviceCount();
         const PaDeviceInfo *deviceInfo;
         PaDeviceIndex motu = paNoDevice;
+
+#ifdef __linux__
+		const char* substr = "24Ao";
+#endif
+
+#ifdef _WIN32
+		std::string motuName("Out 1-24 (Out 1-24)");
+#endif
         for(int i = 0; i < numDevices; i++){
             deviceInfo = Pa_GetDeviceInfo(i);
 #ifdef __linux__
             const char* name = deviceInfo->name;
-            const char* substr = "24Ao";
-
             if( deviceInfo->maxOutputChannels == 24 && strstr(name, substr) != NULL)
                 motu = i;
 #else
-			std::string motuName("MOTU Pro Audio");
 			std::string deviceName(deviceInfo->name);
 			if (deviceInfo->maxOutputChannels == 24 && deviceName.compare(motuName) == 0)
 			{
