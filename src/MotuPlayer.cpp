@@ -21,7 +21,8 @@ namespace TapX
 #ifdef __linux__
     pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
 #else
-	std::condition_variable condition;
+	//std::condition_variable condition;
+	CONDITION_VARIABLE condition;
 #endif
 
     //NULL instance
@@ -57,6 +58,10 @@ namespace TapX
         symbolCallback = 0;
         sequenceCallback = 0;
         zeros = (float*)calloc(24 * FRAMES_PER_BUFFER, sizeof(float));
+#ifdef _WIN32
+		InitializeConditionVariable(&condition);
+		InitializeCriticalSection(&sequenceStruct.lock);
+#endif
         initializeData();
             
     };
@@ -555,8 +560,11 @@ namespace TapX
         pthread_cond_signal(&condition);
         pthread_mutex_unlock(&sequenceStruct.lock);
 #else
-		std::unique_lock<std::mutex> lock(sequenceStruct.lock);
-		condition.notify_one();
+		EnterCriticalSection(&sequenceStruct.lock);
+		//std::unique_lock<std::mutex> lock(sequenceStruct.lock);
+		//condition.notify_one();
+		WakeConditionVariable(&condition);
+		LeaveCriticalSection(&sequenceStruct.lock);
 #endif
     }
 
@@ -609,15 +617,22 @@ namespace TapX
 			std::string symbol = *it;
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.iwi));
+				Sleep(sequenceStruct.iwi);
+				//std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.iwi));
 			}
 			else
 			{
-				std::unique_lock<std::mutex> lock(sequenceStruct.lock);
+				//std::unique_lock<std::mutex> lock(sequenceStruct.lock);
+				EnterCriticalSection(&sequenceStruct.lock);
 				player->playHapticSymbol(symbol);
-				condition.wait(lock);
+				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+				LeaveCriticalSection(&sequenceStruct.lock);
+				//condition.wait(lock);
 				if (it + 1 != sequenceStruct.sequence.end())
-					std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.ici));
+				{
+					//std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.ici));
+					Sleep(sequenceStruct.ici);
+				}
 			}
 			it++;
 		}

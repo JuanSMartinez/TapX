@@ -11,8 +11,8 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <strsafe.h>
-#include <thread>
-#include <mutex>
+//#include <thread>
+//#include <mutex>
 #include "../inc/portaudio.h"
 #endif
 
@@ -73,7 +73,8 @@ namespace TapX
 #ifdef __linux__
         pthread_mutex_t lock;
 #else
-		std::mutex lock;
+		CRITICAL_SECTION lock;
+		//std::mutex lock;
 #endif
         std::vector<std::string> sequence;
     }SequenceStructure;
