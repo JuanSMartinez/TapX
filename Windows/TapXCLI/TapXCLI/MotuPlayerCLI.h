@@ -3,12 +3,24 @@
 using namespace System;
 using namespace TapX;
 
-namespace TapXCLI {
+namespace TapXCLI 
+{
+	
+	public delegate void SymbolCallback(int error);
+	delegate void SymbolPlayedCallbackCLI(TapX::TapsError error);
 
 	public ref class MotuPlayerCLI
 	{
-	protected:
+
+	private:
+
+		//Internal player instance
 		MotuPlayer* playerInstance;
+
+		SymbolCallback^ external;
+
+		void InternalCallback(TapX::TapsError err);
+		
 
 	public:
 
@@ -26,6 +38,9 @@ namespace TapXCLI {
 
 		//Play a haptic symbol 
 		void PlayHapticSymbol(String^ code);
+		
+		void RegisterExternalCallback(SymbolCallback^ callback);
+
 
 	};
 }
