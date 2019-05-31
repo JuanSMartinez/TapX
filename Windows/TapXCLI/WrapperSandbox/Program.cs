@@ -9,28 +9,78 @@ namespace WrapperSandbox
 {
     class Program
     {
-        public void SymbolCallbak(int err)
+        public void SequenceCallback(int err)
         {
-            Console.WriteLine("Played with code " + err);
+            Console.WriteLine("Played sequence with code " + err);
+        }
+
+        public void SymbolCallback(int err)
+        {
+            Console.WriteLine("Played symbol with code " + err);
         }
 
         static void Main(string[] args)
         {
+            string input;
+            string options = "Type one of the following:\n" +
+                             "To play a single symbol: 1,<SYMBOL>\n" +
+                             "To play a sequence of symbols with an ICI (ms): 2,<SEQUENCE SEPARATED BY COMAS>,<ICI>\n"+
+                             "To play an English sentence with an ICI (ms) and IWI (ms): 3,<SENTENCE>,<ICI>,<IWI>\n" +
+                             "To exit: <XX>";
+
             Program p = new Program();
             Console.WriteLine("Creating player...");
             MotuPlayerCLI player = new MotuPlayerCLI();
             Console.WriteLine("Created player");
 
-            Console.WriteLine("Session started? " + player.SessionStarted());
+            if(player.SessionStarted())
+            {
+                player.RegisterExternalSymbolCallback(p.SymbolCallback);
+                player.RegisterExternalSequenceCallback(p.SequenceCallback);
+                Console.WriteLine(options);
+                input = Console.ReadLine().Trim();
+                while (!input.Equals("XX"))
+                {
+                    char selection = input[0];
+                    double num = char.GetNumericValue(selection);
+                    string[] data;
+                    int ici, iwi;
+                    switch (num)
+                    {
+                        case 1:
+                            string symbol = input.Split(new char[] { ',' })[1];
+                            Console.WriteLine("Playing " + symbol);
+                            player.PlayHapticSymbol(symbol);
+                            break;
+                        case 2:
+                            data = input.Split(new char[] { ',' });
+                            ici = int.Parse(data[data.Length - 1]);
+                            string[] symbols = new string[data.Length - 2];
+                            for (int i = 1; i < data.Length - 1; i++)
+                            {
+                                symbols[i - 1] = data[i];
+                            }
+                            Console.WriteLine("Playing the sequence with " + ici + " ms");
+                            player.PlaySequenceOfSymbols(symbols, ici);
+                            break;
+                        case 3:
+                            data = input.Split(new char[] { ',' });
+                            ici = int.Parse(data[2]);
+                            iwi = int.Parse(data[3]);
+                            Console.WriteLine("Playing the sentence '" + data[1] + "' with " + ici + " ms of ICI and " + iwi + " ms of IWI");
+                            player.PlayEnglishSentence(data[1], ici, iwi);
+                            break;
+                        default:
+                            Console.WriteLine("Default");
+                            break;
+                    }
 
 
-            player.RegisterExternalCallback(p.SymbolCallbak);
+                    Console.WriteLine(options);
+                    input = Console.ReadLine().Trim();
+                }
+            }
 
-
-
-            player.PlayHapticSymbol("OO");
-
-            Console.Read();
         }
     }
 }
