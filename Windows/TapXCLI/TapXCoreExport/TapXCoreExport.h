@@ -12,6 +12,15 @@ extern "C"
 
 	//Finalize 
 	DLLEXPORT void finalize();
+	
+	//Play a haptic symbol
+	DLLEXPORT void playHapticSymbol(const char* symbol);
+
+	//Play a sequence of symbols with an ICI
+	DLLEXPORT void playSequence(const char** sequence, int sequenceLength, int ici);
+
+	//Play an English sentence
+	DLLEXPORT void playEnglishSentence(const char* sentence, int ici, int iwi);
 
 }
 

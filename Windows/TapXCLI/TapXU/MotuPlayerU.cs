@@ -15,6 +15,12 @@ namespace TapXU
         static extern void createMotuPlayer();
         [DllImport("TapXCoreExport")]
         static extern void finalize();
+        [DllImport("TapXCoreExport")]
+        static extern void playHapticSymbol(string symbol);
+        [DllImport("TapXCoreExport")]
+        static extern void playSequence(string[] sequence, int sequenceLength, int ici);
+        [DllImport("TapXCoreExport")]
+        static extern void playEnglishSentence(string sentence, int ici, int iwi);
 
         //Singleton
         private static MotuPlayerU instance = null;
@@ -67,8 +73,27 @@ namespace TapXU
         {
             if(Initialized)
             {
-                
+                playHapticSymbol(symbol);
             }
         }
+
+        //Play a sequence of symbols
+        public void PlaySequence(string[] sequence, int ici)
+        {
+            if(Initialized)
+            {
+                playSequence(sequence, sequence.Length, ici);
+            }
+        }
+
+        //Play and English sentence
+        public void PlayEnglishSentence(string sentence, int ici, int iwi)
+        {
+            if(Initialized)
+            {
+                playEnglishSentence(sentence, ici, iwi);
+            }
+        }
+
     }
 }
