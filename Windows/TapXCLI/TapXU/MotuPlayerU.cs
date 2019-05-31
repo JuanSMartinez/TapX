@@ -4,11 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace TapXU
 {
     public class MotuPlayerU
     {
+        //DLL imports from native code
+        [DllImport("TapXCoreExport")]
+        static extern void createMotuPlayer();
+        [DllImport("TapXCoreExport")]
+        static extern void finalize();
+
         //Singleton
         private static MotuPlayerU instance = null;
 
@@ -41,10 +48,18 @@ namespace TapXU
             startThread.Start();
         }
 
+        //Finalizer
+        ~MotuPlayerU()
+        {
+            finalize();
+        }
+
         //Initialize routine
         private void Initialize()
         {
-            
+            Initialized = false;
+            createMotuPlayer();
+            Initialized = true;
         }
 
         //Play a haptic symbol
