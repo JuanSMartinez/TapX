@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using TapXCLI;
 
 namespace TapXU
 {
@@ -12,9 +11,6 @@ namespace TapXU
     {
         //Singleton
         private static MotuPlayerU instance = null;
-
-        //The CLI player
-        MotuPlayerCLI player;
 
         //Lock object 
         private static readonly object lockObject = new object();
@@ -48,9 +44,7 @@ namespace TapXU
         //Initialize routine
         private void Initialize()
         {
-            Initialized = false;
-            player = new MotuPlayerCLI();
-            Initialized = true;
+            
         }
 
         //Play a haptic symbol
@@ -58,7 +52,7 @@ namespace TapXU
         {
             if(Initialized)
             {
-                player.PlayHapticSymbol(symbol);
+                
             }
         }
     }

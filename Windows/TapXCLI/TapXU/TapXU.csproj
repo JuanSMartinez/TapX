@@ -44,11 +44,5 @@
     <Compile Include="MotuPlayerU.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TapXCLI\TapXCLI.vcxproj">
-      <Project>{aa8cc3a2-962a-4721-8f22-7c0b51702317}</Project>
-      <Name>TapXCLI</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
