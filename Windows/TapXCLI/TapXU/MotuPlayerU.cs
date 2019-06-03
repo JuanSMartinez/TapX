@@ -10,6 +10,10 @@ namespace TapXU
 {
     public class MotuPlayerU
     {
+        //Callback delegates
+        public delegate void SymbolCallback(int error);
+        public delegate void SequenceCallback(int error);
+
         //DLL imports from native code
         [DllImport("TapXCoreExport")]
         static extern void createMotuPlayer();
@@ -21,6 +25,10 @@ namespace TapXU
         static extern void playSequence(string[] sequence, int sequenceLength, int ici);
         [DllImport("TapXCoreExport")]
         static extern void playEnglishSentence(string sentence, int ici, int iwi);
+        [DllImport("TapXCoreExport")]
+        static extern void registerExternalSymbolCallback(SymbolCallback callback);
+        [DllImport("TapXCoreExport")]
+        static extern void registerExternalSequenceCallback(SequenceCallback callback);
 
         //Singleton
         private static MotuPlayerU instance = null;
@@ -93,6 +101,20 @@ namespace TapXU
             {
                 playEnglishSentence(sentence, ici, iwi);
             }
+        }
+
+        //Set a symbol played callback
+        public void SetSymbolCallback(SymbolCallback callback)
+        {
+            if(Initialized)
+                registerExternalSymbolCallback(callback);
+        }
+
+        //Set a sequence played callback
+        public void SetSequenceCallback(SequenceCallback callback)
+        {
+            if (Initialized)
+                registerExternalSequenceCallback(callback);
         }
 
     }

@@ -5,6 +5,10 @@
 //Player instance
 TapX::MotuPlayer* player = 0;
 
+//External callback definitions
+typedef void(__stdcall * SymbolCallback)(int error);
+typedef void(__stdcall * SequenceCallback)(int error);
+
 extern "C"
 {
 	//Create Motu player instance and start the session
@@ -21,6 +25,12 @@ extern "C"
 
 	//Play an English sentence
 	DLLEXPORT void playEnglishSentence(const char* sentence, int ici, int iwi);
+
+	//Register an external symbol played callback
+	DLLEXPORT void registerExternalSymbolCallback(SymbolCallback callback);
+
+	//Register an external sequence played callback
+	DLLEXPORT void registerExternalSequenceCallback(SequenceCallback callback);
 
 }
 

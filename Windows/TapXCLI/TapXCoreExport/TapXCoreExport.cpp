@@ -3,10 +3,32 @@
 
 #include "TapXCoreExport.h"
 
+//External callbacks
+SymbolCallback externalSymbolCallbak = 0;
+SequenceCallback externalSequenceCallback = 0;
+
+//Internal callbacks
+void internalSymbolCallback(TapX::TapsError err)
+{
+	if (externalSymbolCallbak != 0)
+		externalSymbolCallbak((int)err);
+}
+
+void internalSequenceCallback(TapX::TapsError err)
+{
+	if (externalSequenceCallback != 0)
+		externalSequenceCallback((int)err);
+}
+
 DLLEXPORT void createMotuPlayer()
 {
 	player = TapX::MotuPlayer::getInstance();
 	player->startSession();
+	if (player->successfulStart())
+	{
+		player->registerSymbolPlayedCallback(internalSymbolCallback);
+		player->registerSequencePlayedCallback(internalSequenceCallback);
+	}
 }
 
 DLLEXPORT void finalize()
@@ -47,4 +69,14 @@ DLLEXPORT void playEnglishSentence(const char* sentence, int ici, int iwi)
 		std::string str(sentence);
 		player->playEnglishSentence(sentence, ici, iwi);
 	}
+}
+
+DLLEXPORT void registerExternalSymbolCallback(SymbolCallback callback)
+{
+	externalSymbolCallbak = callback;
+}
+
+DLLEXPORT void registerExternalSequenceCallback(SequenceCallback callback)
+{
+	externalSequenceCallback = callback;
 }
