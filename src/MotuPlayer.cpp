@@ -725,42 +725,108 @@ namespace TapX
         return result;
 #else
 
-		char   psBuffer[1024];
-		FILE   *pPipe;
+		HANDLE g_hChildStd_OUT_Rd = NULL;
+		HANDLE g_hChildStd_OUT_Wr = NULL;
 
-		/* Run DIR so that it writes its output to a pipe. Open this
-		 * pipe with read text attribute so that we can read it
-		 * like a text file.
-		 */
-		if ((pPipe = _popen(command.c_str(), "rt")) == NULL)
-			return "";
+		SECURITY_ATTRIBUTES saAttr;
+		saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		saAttr.bInheritHandle = TRUE;
+		saAttr.lpSecurityDescriptor = NULL;
 
-		/* Read pipe until end of file, or an error occurs. */
-
-		while (fgets(psBuffer, 1024, pPipe));
-
-		/* Close pipe  */
-		if (feof(pPipe))
+		if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0))
 		{
-			result = std::string(psBuffer);
+			printf("Could not create pipe\n");
+			return "";
+		}
 
-			//Remove last newline character
-			result.erase(result.length() - 1);
+		if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
+		{
+			printf("Read handle inherited\n");
+			return "";
+		}
 
-			//Remove first and last "pau" symbols and the corresponding spaces
-			int i;
-			for (i = 0; i < 4; i++)
-				result.erase(result.begin());
-			for (i = 0; i < 5; i++)
-				result.erase(result.length() - 1);
+		//Child process
+		STARTUPINFO StartupInfo;
+		PROCESS_INFORMATION ProcessInfo;
+		char Args[4096];
+		char *pEnvCMD = NULL;
+		const char *pDefaultCMD = "CMD.EXE";
+		ULONG rc;
 
-			return result;
+		memset(&StartupInfo, 0, sizeof(StartupInfo));
+		StartupInfo.cb = sizeof(STARTUPINFO);
+		StartupInfo.dwFlags |= STARTF_USESHOWWINDOW;
+		StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+		StartupInfo.wShowWindow = SW_HIDE;
+		StartupInfo.hStdOutput = g_hChildStd_OUT_Wr;
+
+		Args[0] = 0;
+		strcpy_s(Args, pDefaultCMD);
+
+		// "/c" option - Do the command then terminate the command window
+		strcat_s(Args, " /c ");
+		//the flite application and the arguments
+		strcat_s(Args, command.c_str());
+
+
+		BOOL bSuccess = FALSE;
+		bSuccess = CreateProcess(NULL,
+			Args,     // command line 
+			NULL,          // process security attributes 
+			NULL,          // primary thread security attributes 
+			TRUE,          // handles are inherited 
+			0,             // creation flags 
+			NULL,          // use parent's environment 
+			NULL,          // use parent's current directory 
+			&StartupInfo,  // STARTUPINFO pointer 
+			&ProcessInfo);  // receives PROCESS_INFORMATION 
+
+		if (!bSuccess)
+		{
+			printf("Could not create process\n");
+			return "";
 		}
 		else
 		{
-			printf("Error: Failed to read the pipe to the end.\n");
-			return "";
+
+			WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+			if (!GetExitCodeProcess(ProcessInfo.hProcess, &rc))
+				rc = 0;
+
+			CloseHandle(ProcessInfo.hThread);
+			CloseHandle(ProcessInfo.hProcess);
+
 		}
+
+		//Read the pipe
+		DWORD dwRead;
+		CHAR chBuf[4096];
+		bSuccess = FALSE;
+		HANDLE hParentStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+		int i;
+		for (;;)
+		{
+			bSuccess = ReadFile(g_hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
+			i = 0;
+			while (i < dwRead)
+			{
+				result += chBuf[i];
+				i++;
+			}
+			if (!bSuccess || dwRead < 4096) break;
+		}
+
+		//Remove last newline character
+		result.erase(result.length() - 1);
+
+		//Remove first and last "pau" symbols and the corresponding spaces
+		for (i = 0; i < 4; i++)
+			result.erase(result.begin());
+		for (i = 0; i < 5; i++)
+			result.erase(result.length() - 1);
+
+		return result;
+
 #endif
 
     }
