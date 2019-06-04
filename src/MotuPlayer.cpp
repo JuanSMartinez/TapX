@@ -626,19 +626,15 @@ namespace TapX
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
 				Sleep(sequenceStruct.iwi);
-				//std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.iwi));
 			}
 			else
 			{
-				//std::unique_lock<std::mutex> lock(sequenceStruct.lock);
 				EnterCriticalSection(&sequenceStruct.lock);
 				player->playHapticSymbol(symbol);
 				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
 				LeaveCriticalSection(&sequenceStruct.lock);
-				//condition.wait(lock);
 				if (it + 1 != sequenceStruct.sequence.end())
 				{
-					//std::this_thread::sleep_for(std::chrono::milliseconds(sequenceStruct.ici));
 					Sleep(sequenceStruct.ici);
 				}
 			}
@@ -672,13 +668,60 @@ namespace TapX
 
 		DWORD threadId;
 		HANDLE threadHandle = CreateThread(NULL, 0, playSequenceProcessWin, NULL, 0, &threadId);
-
-		//std::thread thread(playSequenceProcessWin);
-		//thread.detach();
 		
 #endif
         
     }
+
+#ifdef _WIN32
+	typedef struct SentenceData
+	{
+		std::string sentence;
+		int ici;
+		int iwi;
+	}*SDATA;
+	DWORD playSentenceProcessWin(LPVOID lpParam)
+	{
+		std::vector<std::string> phonemes;
+		SDATA data = (SDATA)lpParam;
+		std::string sentence = data->sentence;
+		MotuPlayer* player = MotuPlayer::getInstance();
+		player->getPhonemesOfSentence(&phonemes, sentence);
+		
+		sequenceStruct.sequence = phonemes;
+		sequenceStruct.ici = data->ici;
+		sequenceStruct.iwi = data->iwi;
+		sequenceStruct.err = TapsNoError;
+		previousSymbolCallback = player->getRegisteredSymbolCallback();
+		player->registerSymbolPlayedCallback(syncCallback);
+		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
+
+		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
+		{
+			std::string symbol = *it;
+			if (std::string(symbol).compare("PAUSE") == 0)
+			{
+				Sleep(sequenceStruct.iwi);
+			}
+			else
+			{
+				EnterCriticalSection(&sequenceStruct.lock);
+				player->playHapticSymbol(symbol);
+				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+				LeaveCriticalSection(&sequenceStruct.lock);
+				if (it + 1 != sequenceStruct.sequence.end())
+				{
+					Sleep(sequenceStruct.ici);
+				}
+			}
+			it++;
+		}
+		player->signalSentencePlayedCallback(sequenceStruct.err);
+		player->registerSymbolPlayedCallback(previousSymbolCallback);
+		return 0;
+
+	}
+#endif
 
     //Play a sequence of symbols with no word separation
     void MotuPlayer::playSymbolSequence(std::vector<std::string> sequence, int ici)
@@ -689,9 +732,15 @@ namespace TapX
     //Play a sentence written in English using Flite
     void MotuPlayer::playEnglishSentence(std::string sentence, int ici, int iwi)
     {
+#ifdef _WIN32
+		DWORD threadId;
+		SDATA data = (SDATA)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(SDATA));
+		HANDLE threadHandle = CreateThread(NULL, 0, playSentenceProcessWin, data, 0, &threadId);
+#else
         std::vector<std::string> phonemes;
         getPhonemesOfSentence(&phonemes, sentence);
         playSequence(phonemes, ici, iwi);
+#endif
     }
 
     // TTS functionality ///////////////////////////////////////////////////
