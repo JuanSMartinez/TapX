@@ -674,23 +674,23 @@ namespace TapX
     }
 
 #ifdef _WIN32
-	typedef struct SentenceData
+	typedef struct 
 	{
 		std::string sentence;
 		int ici;
 		int iwi;
-	}*SDATA;
-	DWORD playSentenceProcessWin(LPVOID lpParam)
+	}SentenceData;
+
+	SentenceData sentenceData;
+	DWORD WINAPI playSentenceProcessWin(LPVOID lpParam)
 	{
 		std::vector<std::string> phonemes;
-		SDATA data = (SDATA)lpParam;
-		std::string sentence = data->sentence;
 		MotuPlayer* player = MotuPlayer::getInstance();
-		player->getPhonemesOfSentence(&phonemes, sentence);
+		player->getPhonemesOfSentence(&phonemes, sentenceData.sentence);
 		
 		sequenceStruct.sequence = phonemes;
-		sequenceStruct.ici = data->ici;
-		sequenceStruct.iwi = data->iwi;
+		sequenceStruct.ici = sentenceData.ici;
+		sequenceStruct.iwi = sentenceData.iwi;
 		sequenceStruct.err = TapsNoError;
 		previousSymbolCallback = player->getRegisteredSymbolCallback();
 		player->registerSymbolPlayedCallback(syncCallback);
@@ -718,6 +718,7 @@ namespace TapX
 		}
 		player->signalSentencePlayedCallback(sequenceStruct.err);
 		player->registerSymbolPlayedCallback(previousSymbolCallback);
+
 		return 0;
 
 	}
@@ -734,8 +735,10 @@ namespace TapX
     {
 #ifdef _WIN32
 		DWORD threadId;
-		SDATA data = (SDATA)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(SDATA));
-		HANDLE threadHandle = CreateThread(NULL, 0, playSentenceProcessWin, data, 0, &threadId);
+		sentenceData.ici = ici;
+		sentenceData.iwi = iwi;
+		sentenceData.sentence = sentence;
+		HANDLE threadHandle = CreateThread(NULL, 0, playSentenceProcessWin, NULL, 0, &threadId);
 #else
         std::vector<std::string> phonemes;
         getPhonemesOfSentence(&phonemes, sentence);

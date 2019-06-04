@@ -79,7 +79,6 @@ namespace TapX
         pthread_mutex_t lock;
 #else
 		CRITICAL_SECTION lock;
-		//std::mutex lock;
 #endif
         std::vector<std::string> sequence;
     }SequenceStructure;

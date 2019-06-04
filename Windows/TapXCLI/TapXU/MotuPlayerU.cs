@@ -41,7 +41,7 @@ namespace TapXU
         {
             get
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     if (instance == null)
                     {
@@ -79,7 +79,7 @@ namespace TapXU
         //Play a haptic symbol
         public void PlayHapticSymbol(string symbol)
         {
-            if(Initialized)
+            if (Initialized)
             {
                 playHapticSymbol(symbol);
             }
@@ -88,7 +88,7 @@ namespace TapXU
         //Play a sequence of symbols
         public void PlaySequence(string[] sequence, int ici)
         {
-            if(Initialized)
+            if (Initialized)
             {
                 playSequence(sequence, sequence.Length, ici);
             }
@@ -97,7 +97,7 @@ namespace TapXU
         //Play and English sentence
         public void PlayEnglishSentence(string sentence, int ici, int iwi)
         {
-            if(Initialized)
+            if (Initialized)
             {
                 playEnglishSentence(sentence, ici, iwi);
             }
@@ -106,7 +106,7 @@ namespace TapXU
         //Set a symbol played callback
         public void SetSymbolCallback(SymbolCallback callback)
         {
-            if(Initialized)
+            if (Initialized)
                 registerExternalSymbolCallback(callback);
         }
 
@@ -115,6 +115,12 @@ namespace TapXU
         {
             if (Initialized)
                 registerExternalSequenceCallback(callback);
+        }
+
+        //Destroy
+        public void Destroy()
+        {
+            finalize();
         }
 
     }
