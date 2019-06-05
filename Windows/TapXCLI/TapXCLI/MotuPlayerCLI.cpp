@@ -170,6 +170,28 @@ namespace TapXCLI
 		PlayEnglishSentence(sentence, ICI, ICI, nullptr, "");
 	}
 
+	//Get raw flite phonemes of a sentence
+	String^ MotuPlayerCLI::GetFlitePhonemesOf(String^ sentence)
+	{
+		std::string str_sentence((const char*)Marshal::StringToHGlobalAnsi(sentence).ToPointer());
+		std::string flitePhonemes = playerInstance->getRawFlitePhonemes(str_sentence);
+		return gcnew String(flitePhonemes.c_str());
+	}
+
+	//Get TAPS phonemes of a sentence
+	array<String^>^ MotuPlayerCLI::GetPhonemesOf(String^ sentence)
+	{
+		std::string str_sentence((const char*)Marshal::StringToHGlobalAnsi(sentence).ToPointer());
+		std::vector<std::string> result;
+		playerInstance->getPhonemesOfSentence(&result, str_sentence);
+		int i;
+		array<String^>^ m_result = gcnew array<String^>(result.size());
+		for (i = 0; i < result.size(); i++)
+			m_result[i] = gcnew String(result.at(i).c_str());
+		return m_result;
+
+	}
+
 
 
 

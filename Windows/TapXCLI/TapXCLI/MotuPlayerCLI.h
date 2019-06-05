@@ -78,6 +78,12 @@ namespace TapXCLI
 		//Play an English sentence using Flite with a defined ICI, IWI, a start flag and a start flag callback
 		void PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag);
 
+		//Get raw flite phonemes of a sentence
+		String^ GetFlitePhonemesOf(String^ sentence);
+
+		//Get TAPS phonemes of a sentence
+		array<String^>^ GetPhonemesOf(String^ sentence);
+
 
 	};
 }

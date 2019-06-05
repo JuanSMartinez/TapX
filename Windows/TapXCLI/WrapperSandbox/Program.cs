@@ -33,6 +33,8 @@ namespace WrapperSandbox
                              "To play an English sentence with an ICI (ms) and IWI (ms): 3,<SENTENCE>,<ICI>,<IWI>\n" +
                              "To play a sequence of symbols with an ICI (ms) and a KNOCK start flag: 4,<SEQUENCE SEPARATED BY COMAS>,<ICI>\n" +
                              "To play an English sentence with an ICI (ms), IWI (ms) and KNOCK start flag: 5,<SENTENCE>,<ICI>,<IWI>\n" +
+                             "To get the raw Flite phonemes of a sentence: 6,<SENTENCE>\n" +
+                             "To get the TAPS phonemes of a sentence: 7,<SENTENCE>\n" +
                              "To exit: <XX>";
 
             Program p = new Program();
@@ -52,6 +54,8 @@ namespace WrapperSandbox
                     double num = char.GetNumericValue(selection);
                     string[] data;
                     string[] symbols;
+                    string flitePhonemes;
+                    string[] phonemes;
                     int ici, iwi;
                     switch (num)
                     {
@@ -95,6 +99,18 @@ namespace WrapperSandbox
                             iwi = int.Parse(data[3]);
                             Console.WriteLine("Playing the sentence '" + data[1] + "' with " + ici + " ms of ICI and " + iwi + " ms of IWI");
                             player.PlayEnglishSentence(data[1], ici, iwi, p.StartFlagCallback, "KNOCK");
+                            break;
+                        case 6:
+                            data = input.Split(new char[] { ',' });
+                            flitePhonemes = player.GetFlitePhonemesOf(data[1]);
+                            Console.WriteLine("Flite phonemes of '" + data[1] + "': " + flitePhonemes);
+                            break;
+                        case 7:
+                            data = input.Split(new char[] { ',' });
+                            phonemes = player.GetPhonemesOf(data[1]);
+                            Console.WriteLine("Flite phonemes of '" + data[1] + "':");
+                            foreach(string phoneme in phonemes)
+                                Console.WriteLine(phoneme);
                             break;
                         default:
                             Console.WriteLine("Default");
