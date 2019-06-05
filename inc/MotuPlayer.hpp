@@ -64,9 +64,11 @@ namespace TapX
 #ifdef _WIN32
     typedef void (__stdcall *SymbolPlayedCallback)(TapsError);
     typedef void (__stdcall *SequencePlayedCallback)(TapsError);
+	typedef void(__stdcall *StartFlagPlayedCallback)(TapsError);
 #else
     typedef void (*SymbolPlayedCallback)(TapsError);
     typedef void (*SequencePlayedCallback)(TapsError);
+	typedef void (*StartFlagPlayedCallback)(TapsError);
 #endif
 
     //Structure for a sequence of symbols
@@ -75,12 +77,14 @@ namespace TapX
         int ici;
         int iwi;
         TapsError err;
+		std::vector<std::string> sequence;
+		StartFlagPlayedCallback startFlagCallback;
+		std::string startFlag;
 #ifdef __linux__
         pthread_mutex_t lock;
 #else
 		CRITICAL_SECTION lock;
 #endif
-        std::vector<std::string> sequence;
     }SequenceStructure;
 
 
@@ -110,7 +114,7 @@ namespace TapX
             TapsError stopPlaybackSession();
             void signalSymbolCallback(TapsError err);
             void playSymbol(std::string code);
-            void playSequence(std::vector<std::string> sequence, int ici, int iwi);
+            void playSequence(std::vector<std::string> sequence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
             void splitStringBy(std::vector<std::string>* result, std::string delimiter, std::string str);
             
             static int paCallback(const void *inputBuffer, void *outputBuffer,
@@ -132,13 +136,18 @@ namespace TapX
             bool isPlaying();
             void signalSentencePlayedCallback(TapsError err);
 
+			//Playing functions
             void playHapticSymbol(std::string code);
             void playSymbolSequence(std::vector<std::string> sequence, int ici);
+			void playSymbolSequence(std::vector<std::string> sequence, int ici, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
 
+			//Flite functions
             std::string getRawFlitePhonemes(std::string sentence);
             void getPhonemesOfSentence(std::vector<std::string>* result, std::string sentence);
 
-            void playEnglishSentence(std::string sentence, int ici, int iwi);
+			//Play sentence using flite
+			void playEnglishSentence(std::string sentence, int ici, int iwi);
+            void playEnglishSentence(std::string sentence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
        
     };
 }

@@ -8,6 +8,7 @@ namespace TapXCLI
 	//Memory handles for managed callbacks
 	GCHandle gchSymbol;
 	GCHandle gchSequence;
+	GCHandle gchStartFlag;
 
 	//Internal symbol callback. Serves as a bridge between the unmanaged and managed callbacks for symbols
 	void MotuPlayerCLI::InternalSymbolCallback(TapX::TapsError err)
@@ -21,6 +22,16 @@ namespace TapXCLI
 	{
 		if (externalSequenceCallback != nullptr)
 			externalSequenceCallback->Invoke((int)err);
+	}
+
+	//Internal callback for when a start flag is played
+	void MotuPlayerCLI::InternalStartFlagCallback(TapX::TapsError err)
+	{
+		if (externalStartFlagCallback != nullptr)
+		{
+			externalStartFlagCallback->Invoke((int)err);
+			externalStartFlagCallback = nullptr;
+		}
 	}
 
 	//Constructor
@@ -96,8 +107,8 @@ namespace TapXCLI
 		externalSequenceCallback = callback;
 	}
 
-	//Play a sequence of symbols with a defined ICI
-	void MotuPlayerCLI::PlaySequenceOfSymbols(array<String^>^ sequence, int ICI)
+	//Play a sequence of symbols with a defined ICI with a start flag and start flag callback
+	void MotuPlayerCLI::PlaySequenceOfSymbols(array<String^>^ sequence, int ICI, StartFlagCallback^ startFlagCallback, String^ startFlag)
 	{
 		std::vector<std::string> vect(sequence->Length);
 		if (sequence->Length)
@@ -107,15 +118,56 @@ namespace TapXCLI
 			for (int i = 0; i < sequence->Length; ++i) {
 				vect[static_cast<size_t>(i)] = context.marshal_as<std::string>(sequence[i]);
 			}
-			playerInstance->playSymbolSequence(vect, ICI);
+
+			if (startFlagCallback != nullptr)
+			{
+				std::string str_startFlag((const char*)Marshal::StringToHGlobalAnsi(startFlag).ToPointer());
+				StartFlagPlayedCallbackCLI^ fpSequence = gcnew StartFlagPlayedCallbackCLI(this, &MotuPlayerCLI::InternalStartFlagCallback);
+				gchStartFlag = GCHandle::Alloc(fpSequence);
+				IntPtr ipSequence = Marshal::GetFunctionPointerForDelegate(fpSequence);
+
+				TapX::StartFlagPlayedCallback cbsSequence = static_cast<TapX::StartFlagPlayedCallback>(ipSequence.ToPointer());
+				externalStartFlagCallback = startFlagCallback;
+				playerInstance->playSymbolSequence(vect, ICI, cbsSequence, str_startFlag);
+			}
+			else
+			{
+				playerInstance->playSymbolSequence(vect, ICI);
+			}
+		}
+	}
+
+	//Play a sequence of symbols with a defined ICI
+	void MotuPlayerCLI::PlaySequenceOfSymbols(array<String^>^ sequence, int ICI)
+	{
+		PlaySequenceOfSymbols(sequence, ICI, nullptr, "");
+	}
+
+	//Play an English sentence using Flite with a defined ICI, IWI, start flag and start flag callback
+	void MotuPlayerCLI::PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag)
+	{
+		std::string str_sentence((const char*)Marshal::StringToHGlobalAnsi(sentence).ToPointer());
+		if (startFlagCallback != nullptr)
+		{
+			std::string str_startFlag((const char*)Marshal::StringToHGlobalAnsi(startFlag).ToPointer());
+			StartFlagPlayedCallbackCLI^ fpSequence = gcnew StartFlagPlayedCallbackCLI(this, &MotuPlayerCLI::InternalStartFlagCallback);
+			gchStartFlag = GCHandle::Alloc(fpSequence);
+			IntPtr ipSequence = Marshal::GetFunctionPointerForDelegate(fpSequence);
+
+			TapX::StartFlagPlayedCallback cbsSequence = static_cast<TapX::StartFlagPlayedCallback>(ipSequence.ToPointer());
+			externalStartFlagCallback = startFlagCallback;
+			playerInstance->playEnglishSentence(str_sentence, ICI, IWI, cbsSequence, str_startFlag);
+		}
+		else
+		{
+			playerInstance->playEnglishSentence(str_sentence, ICI, IWI);
 		}
 	}
 
 	//Play an English sentence using Flite with a defined ICI and IWI
 	void MotuPlayerCLI::PlayEnglishSentence(String^ sentence, int ICI, int IWI)
 	{
-		std::string str_sentence((const char*)Marshal::StringToHGlobalAnsi(sentence).ToPointer());
-		playerInstance->playEnglishSentence(str_sentence, ICI, IWI);
+		PlayEnglishSentence(sentence, ICI, ICI, nullptr, "");
 	}
 
 

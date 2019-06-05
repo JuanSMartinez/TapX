@@ -9,10 +9,12 @@ namespace TapXCLI
 	//CLI delegates for playback
 	public delegate void SymbolCallback(int error);
 	public delegate void SequenceCallback(int error);
+	public delegate void StartFlagCallback(int error);
 
 	//Internal delegates for playback
 	delegate void SymbolPlayedCallbackCLI(TapX::TapsError error);
 	delegate void SequencePlayedCallbackCLI(TapX::TapsError error);
+	delegate void StartFlagPlayedCallbackCLI(TapX::TapsError error);
 
 	public ref class MotuPlayerCLI
 	{
@@ -31,8 +33,14 @@ namespace TapXCLI
 		//External callback for sequence playback 
 		SequenceCallback^ externalSequenceCallback;
 
-		//Internal callback for sequenc playback
+		//Internal callback for sequence playback
 		void InternalSequenceCallback(TapX::TapsError err);
+
+		//External callback for startFlag playback 
+		StartFlagCallback^ externalStartFlagCallback;
+
+		//Internal callback for start flag
+		void InternalStartFlagCallback(TapX::TapsError err);
 		
 
 	public:
@@ -63,6 +71,12 @@ namespace TapXCLI
 
 		//Play an English sentence using Flite with a defined ICI and IWI
 		void PlayEnglishSentence(String^ sentence, int ICI, int IWI);
+
+		//Play a sequence of symbols with a defined ICI, a start flag and a start flag callback
+		void PlaySequenceOfSymbols(array<String^>^ sequence, int ICI, StartFlagCallback^ startFlagCallback, String^ startFlag);
+
+		//Play an English sentence using Flite with a defined ICI, IWI, a start flag and a start flag callback
+		void PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag);
 
 
 	};

@@ -14,6 +14,45 @@ void testSequenceCallback(TapX::TapsError err)
 {
 	printf("External callback for sequence used, played sequence with code %d\n", err);
 }
+
+void testStartFlagCallback(TapX::TapsError err)
+{
+	printf("External callback for start flag used, played flag with code %d\n", err);
+}
+
+int playSentenceStartFlag()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
+	player->startSession();
+	player->registerSequencePlayedCallback(testSequenceCallback);
+	if (player->successfulStart())
+	{
+		char buff[64];
+		std::vector<std::string> result;
+		std::vector<std::string>::iterator it;
+		printf("Type a sentence to play or 'xx' to exit\n");
+		fgets(buff, 64, stdin);
+		if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+			buff[strlen(buff) - 1] = '\0';
+		while (std::string(buff).compare("xx") != 0)
+		{
+			std::string typed(buff);
+
+			player->playEnglishSentence(typed, 150, 1500, testStartFlagCallback, "KNOCK");
+
+			printf("Type a sentence to play or 'xx' to exit\n");
+			fgets(buff, 64, stdin);
+			if ((strlen(buff) > 0) && (buff[strlen(buff) - 1] == '\n'))
+				buff[strlen(buff) - 1] = '\0';
+		}
+		delete player;
+		return 0;
+
+	}
+	return -1;
+}
+
 int playSentence()
 {
 	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
@@ -161,6 +200,47 @@ int playSequenceOfSymbols()
 	return -1;
 }
 
+int playSequenceOfSymbolsStartFlag()
+{
+	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
+	printf("Player created\n");
+	player->startSession();
+	player->registerSequencePlayedCallback(testSequenceCallback);
+	if (player->successfulStart())
+	{
+		char buff[64];
+		printf("Type a sequence of symbols separated by comas and ICI at the end or 'xx' to exit\n");
+		scanf("%64s", buff);
+		std::vector<std::string> vector;
+		while (std::string(buff).compare("xx") != 0)
+		{
+			vector.clear();
+			std::string typed(buff);
+
+			size_t pos = 0;
+			std::string token;
+			std::string delimiter = ",";
+			while ((pos = typed.find(delimiter)) != std::string::npos)
+			{
+				token = typed.substr(0, pos);
+				vector.push_back(token);
+				typed.erase(0, pos + delimiter.length());
+			}
+			int ici = (int)strtol(typed.c_str(), NULL, 10);
+
+			printf("Playing sequence of symbols with %d ms ICI\n", ici);
+			player->playSymbolSequence(vector, ici, testStartFlagCallback, "KNOCK");
+
+			printf("Type a sequence of symbols separated by comas and ICI at the end or 'xx' to exit\n");
+			scanf("%64s", buff);
+		}
+		delete player;
+		return 0;
+
+	}
+	return -1;
+}
+
 int playIndividualSymbols()
 {
 	TapX::MotuPlayer* player = TapX::MotuPlayer::getInstance();
@@ -192,7 +272,9 @@ int main()
 	//return playSequenceOfSymbols();
 	//return getFlitePhonemes();
 	//return getPhonemes();
-	return playSentence();
+	//return playSentence();
+	//return playSequenceOfSymbolsStartFlag();
+	return playSentenceStartFlag();
 	
 }
 
