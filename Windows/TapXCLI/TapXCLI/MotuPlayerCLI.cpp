@@ -70,10 +70,38 @@ namespace TapXCLI
 	{
 		if (playerInstance != nullptr)
 			delete playerInstance;
-		gchSymbol.Free();
-		gchSentenceTranscribed.Free();
-		gchSequence.Free();
-		gchStartFlag.Free();
+		try
+		{
+			gchSymbol.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		try
+		{
+			gchSentenceTranscribed.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		try
+		{
+			gchSequence.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		try
+		{
+			gchStartFlag.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
 		
 	}
 
@@ -82,10 +110,41 @@ namespace TapXCLI
 	{
 		if (playerInstance != nullptr)
 			delete playerInstance;
-		gchSymbol.Free();
-		gchSentenceTranscribed.Free();
-		gchSequence.Free();
-		gchStartFlag.Free();
+		try
+		{
+			gchSymbol.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		try
+		{
+			gchSentenceTranscribed.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		try
+		{
+			gchSequence.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		try
+		{
+			gchStartFlag.Free();
+		}
+		catch (Exception^ e)
+		{
+			//Thrown if the handle was not initialized, do nothing
+		}
+		
+		
+		
 	}
 
 	//Did the session start correctly
@@ -164,7 +223,7 @@ namespace TapXCLI
 			TapX::StartFlagPlayedCallback cbsSequence = static_cast<TapX::StartFlagPlayedCallback>(ipSequence.ToPointer());
 			externalStartFlagCallback = startFlagCallback;
 
-			if(sentenceTranscribedCallback != nullptr)
+			if(sentenceTranscribedCallback == nullptr)
 				playerInstance->playEnglishSentence(str_sentence, ICI, IWI, cbsSequence, str_startFlag, 0);
 			else
 			{

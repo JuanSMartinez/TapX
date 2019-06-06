@@ -24,6 +24,11 @@ namespace WrapperSandbox
             Console.WriteLine("Played start flag with code " + err);
         }
 
+        public void SentenceTranscribed()
+        {
+            Console.WriteLine("Sentence transcribed from flite");
+        }
+
         static void Main(string[] args)
         {
             string input;
@@ -98,7 +103,7 @@ namespace WrapperSandbox
                             ici = int.Parse(data[2]);
                             iwi = int.Parse(data[3]);
                             Console.WriteLine("Playing the sentence '" + data[1] + "' with " + ici + " ms of ICI and " + iwi + " ms of IWI");
-                            player.PlayEnglishSentence(data[1], ici, iwi, p.StartFlagCallback, "KNOCK", null);
+                            player.PlayEnglishSentence(data[1], ici, iwi, p.StartFlagCallback, "KNOCK", p.SentenceTranscribed);
                             break;
                         case 6:
                             data = input.Split(new char[] { ',' });
