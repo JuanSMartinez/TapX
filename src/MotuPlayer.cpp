@@ -687,6 +687,7 @@ namespace TapX
 		int ici;
 		int iwi;
 		StartFlagPlayedCallback startFlagCallback;
+		SentenceTranscribedCallback sentenceTranscribedCallback;
 		std::string startFlag;
 	}SentenceData;
 
@@ -696,7 +697,6 @@ namespace TapX
 		std::vector<std::string> phonemes;
 		MotuPlayer* player = MotuPlayer::getInstance();
 		player->getPhonemesOfSentence(&phonemes, sentenceData.sentence);
-		
 		sequenceStruct.sequence = phonemes;
 		sequenceStruct.ici = sentenceData.ici;
 		sequenceStruct.iwi = sentenceData.iwi;
@@ -709,7 +709,8 @@ namespace TapX
 		previousSymbolCallback = player->getRegisteredSymbolCallback();
 		player->registerSymbolPlayedCallback(syncCallback);
 		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
-
+		if (sentenceData.sentenceTranscribedCallback != 0)
+			sentenceData.sentenceTranscribedCallback();
 		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
 		{
 			std::string symbol = *it;
@@ -753,11 +754,11 @@ namespace TapX
     //Play a sentence written in English using Flite
     void MotuPlayer::playEnglishSentence(std::string sentence, int ici, int iwi)
     {
-		playEnglishSentence(sentence, ici, iwi, 0, "");
+		playEnglishSentence(sentence, ici, iwi, 0, "", 0);
     }
 
 	//Play a sentence written in English using Flite
-	void MotuPlayer::playEnglishSentence(std::string sentence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag)
+	void MotuPlayer::playEnglishSentence(std::string sentence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag, SentenceTranscribedCallback sentenceTranscribedCallback)
 	{
 #ifdef _WIN32
 		DWORD threadId;
@@ -766,10 +767,13 @@ namespace TapX
 		sentenceData.sentence = sentence;
 		sentenceData.startFlagCallback = startFlagCallback;
 		sentenceData.startFlag = startFlag;
+		sentenceData.sentenceTranscribedCallback = sentenceTranscribedCallback;
 		HANDLE threadHandle = CreateThread(NULL, 0, playSentenceProcessWin, NULL, 0, &threadId);
 #else
 		std::vector<std::string> phonemes;
 		getPhonemesOfSentence(&phonemes, sentence);
+		if (sentenceTranscribedCallback != 0)
+			sentenceTranscribedCallback();
 		playSequence(phonemes, ici, iwi, startFlagCallback, startFlag);
 #endif
 	}

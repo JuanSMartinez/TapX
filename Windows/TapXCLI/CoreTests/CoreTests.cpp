@@ -39,7 +39,7 @@ int playSentenceStartFlag()
 		{
 			std::string typed(buff);
 
-			player->playEnglishSentence(typed, 150, 1500, testStartFlagCallback, "KNOCK");
+			player->playEnglishSentence(typed, 150, 1500, testStartFlagCallback, "KNOCK", 0);
 
 			printf("Type a sentence to play or 'xx' to exit\n");
 			fgets(buff, 64, stdin);

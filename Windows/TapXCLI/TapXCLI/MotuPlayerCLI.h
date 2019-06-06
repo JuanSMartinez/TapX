@@ -10,6 +10,7 @@ namespace TapXCLI
 	public delegate void SymbolCallback(int error);
 	public delegate void SequenceCallback(int error);
 	public delegate void StartFlagCallback(int error);
+	public delegate void SentenceTranscribedCallback(void);
 
 	//Internal delegates for playback
 	delegate void SymbolPlayedCallbackCLI(TapX::TapsError error);
@@ -76,7 +77,7 @@ namespace TapXCLI
 		void PlaySequenceOfSymbols(array<String^>^ sequence, int ICI, StartFlagCallback^ startFlagCallback, String^ startFlag);
 
 		//Play an English sentence using Flite with a defined ICI, IWI, a start flag and a start flag callback
-		void PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag);
+		void PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag, SentenceTranscribedCallback^ sentenceTranscribedCallback);
 
 		//Get raw flite phonemes of a sentence
 		String^ GetFlitePhonemesOf(String^ sentence);

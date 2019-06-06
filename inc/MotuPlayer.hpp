@@ -65,10 +65,12 @@ namespace TapX
     typedef void (__stdcall *SymbolPlayedCallback)(TapsError);
     typedef void (__stdcall *SequencePlayedCallback)(TapsError);
 	typedef void(__stdcall *StartFlagPlayedCallback)(TapsError);
+	typedef void(__stdcall *SentenceTranscribedCallback)(void);
 #else
     typedef void (*SymbolPlayedCallback)(TapsError);
     typedef void (*SequencePlayedCallback)(TapsError);
 	typedef void (*StartFlagPlayedCallback)(TapsError);
+	typedef void (*SentenceTranscribedCallback)(void);
 #endif
 
     //Structure for a sequence of symbols
@@ -147,7 +149,7 @@ namespace TapX
 
 			//Play sentence using flite
 			void playEnglishSentence(std::string sentence, int ici, int iwi);
-            void playEnglishSentence(std::string sentence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
+            void playEnglishSentence(std::string sentence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag, SentenceTranscribedCallback sentenceTranscribedCallback);
        
     };
 }

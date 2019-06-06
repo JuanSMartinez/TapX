@@ -9,6 +9,7 @@ namespace TapXCLI
 	GCHandle gchSymbol;
 	GCHandle gchSequence;
 	GCHandle gchStartFlag;
+	GCHandle gchSentenceTranscribed;
 
 	//Internal symbol callback. Serves as a bridge between the unmanaged and managed callbacks for symbols
 	void MotuPlayerCLI::InternalSymbolCallback(TapX::TapsError err)
@@ -70,6 +71,9 @@ namespace TapXCLI
 		if (playerInstance != nullptr)
 			delete playerInstance;
 		gchSymbol.Free();
+		gchSentenceTranscribed.Free();
+		gchSequence.Free();
+		gchStartFlag.Free();
 		
 	}
 
@@ -79,6 +83,9 @@ namespace TapXCLI
 		if (playerInstance != nullptr)
 			delete playerInstance;
 		gchSymbol.Free();
+		gchSentenceTranscribed.Free();
+		gchSequence.Free();
+		gchStartFlag.Free();
 	}
 
 	//Did the session start correctly
@@ -144,7 +151,7 @@ namespace TapXCLI
 	}
 
 	//Play an English sentence using Flite with a defined ICI, IWI, start flag and start flag callback
-	void MotuPlayerCLI::PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag)
+	void MotuPlayerCLI::PlayEnglishSentence(String^ sentence, int ICI, int IWI, StartFlagCallback^ startFlagCallback, String^ startFlag, SentenceTranscribedCallback^ sentenceTranscribedCallback)
 	{
 		std::string str_sentence((const char*)Marshal::StringToHGlobalAnsi(sentence).ToPointer());
 		if (startFlagCallback != nullptr)
@@ -156,7 +163,17 @@ namespace TapXCLI
 
 			TapX::StartFlagPlayedCallback cbsSequence = static_cast<TapX::StartFlagPlayedCallback>(ipSequence.ToPointer());
 			externalStartFlagCallback = startFlagCallback;
-			playerInstance->playEnglishSentence(str_sentence, ICI, IWI, cbsSequence, str_startFlag);
+
+			if(sentenceTranscribedCallback != nullptr)
+				playerInstance->playEnglishSentence(str_sentence, ICI, IWI, cbsSequence, str_startFlag, 0);
+			else
+			{
+	
+				gchSentenceTranscribed = GCHandle::Alloc(sentenceTranscribedCallback);
+				IntPtr ipSequenceSentence = Marshal::GetFunctionPointerForDelegate(sentenceTranscribedCallback);
+				TapX::SentenceTranscribedCallback cbsSequenceSentence = static_cast<TapX::SentenceTranscribedCallback>(ipSequenceSentence.ToPointer());
+				playerInstance->playEnglishSentence(str_sentence, ICI, IWI, cbsSequence, str_startFlag, cbsSequenceSentence);
+			}
 		}
 		else
 		{
@@ -167,7 +184,7 @@ namespace TapXCLI
 	//Play an English sentence using Flite with a defined ICI and IWI
 	void MotuPlayerCLI::PlayEnglishSentence(String^ sentence, int ICI, int IWI)
 	{
-		PlayEnglishSentence(sentence, ICI, ICI, nullptr, "");
+		PlayEnglishSentence(sentence, ICI, ICI, nullptr, "", nullptr);
 	}
 
 	//Get raw flite phonemes of a sentence
