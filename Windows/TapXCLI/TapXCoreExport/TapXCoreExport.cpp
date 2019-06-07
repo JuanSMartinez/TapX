@@ -36,6 +36,7 @@ DLLEXPORT void finalize()
 	if (player != 0)
 	{
 		delete player;
+		player = 0;
 	}
 }
 
