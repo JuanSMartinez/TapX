@@ -486,6 +486,7 @@ namespace TapX
     }
 
     //Trim a string
+#ifdef __linux__
     std::string trim(std::string str)
     {
         // remove trailing white space
@@ -496,6 +497,7 @@ namespace TapX
         while( pos < str.size() && std::isspace( str[pos] ) ) ++pos ;
         return str.substr(pos) ;
     }
+#endif
 
     //Playback functionality/////////////////////////////////////////
 
@@ -647,7 +649,7 @@ namespace TapX
 
 		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
 		{
-			std::string symbol = trim(*it);
+			std::string symbol = *it;
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
 				Sleep(sequenceStruct.iwi);
