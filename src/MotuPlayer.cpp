@@ -485,11 +485,23 @@ namespace TapX
         return playing;
     }
 
+    //Trim a string
+    std::string trim(std::string str)
+    {
+        // remove trailing white space
+        while( !str.empty() && std::isspace( str.back() ) ) str.pop_back() ;
+
+        // return residue after leading white space
+        std::size_t pos = 0 ;
+        while( pos < str.size() && std::isspace( str[pos] ) ) ++pos ;
+        return str.substr(pos) ;
+    }
+
     //Playback functionality/////////////////////////////////////////
 
     //Play a haptic symbol with a string code
     //WARNING: This method is not synchronized, playHapticSymbol is safer
-    void MotuPlayer::playSymbol(std::string code)
+    TapsError MotuPlayer::playSymbol(std::string code)
     {   
         if(!sessionStarted)
         {
@@ -507,7 +519,7 @@ namespace TapX
                 phoneme->resetIndex();
                 playing = true;
                 currentPlayingSymbol = phoneme;
-                return;
+                return TapsNoError;
             }
 
             //If its a flag
@@ -518,7 +530,7 @@ namespace TapX
                 flag->resetIndex();
                 playing = true;
                 currentPlayingSymbol = flag;
-                return;
+                return TapsNoError;
             }
 
             //If its a chunk
@@ -529,32 +541,40 @@ namespace TapX
                 chunk->resetIndex();
                 playing = true;
                 currentPlayingSymbol = chunk;
-                return;
+                return TapsNoError;
             }
-            
+            return TapsErrorSymbolNotFound;
             signalSymbolCallback(TapsErrorSymbolNotFound);
         }
         else
         {
             signalSymbolCallback(TapsErrorSignalAlreadyPlaying);
+            return TapsErrorSignalAlreadyPlaying;
         }
           
     }
 
     //Play a haptic symbol trying to lock MOTU
-    void MotuPlayer::playHapticSymbol(std::string code)
+    TapsError MotuPlayer::playHapticSymbol(std::string code)
     {
 #ifdef __linux__
         if(pthread_mutex_trylock(&motu_lock) == 0)
         {
-            playSymbol(code);
+            return playSymbol(code);
         }
+        else 
+            return TapsErrorSignalAlreadyPlaying;
 #else
 		if (!motu_lock)
 		{
 			motu_lock = true;
-			playSymbol(code);
+			return playSymbol(code);
 		}
+        else
+        {
+            return TapsErrorSignalAlreadyPlaying;
+        }
+        
 #endif
     }
 
@@ -576,7 +596,7 @@ namespace TapX
 		EnterCriticalSection(&sequenceStruct.lock);
 		WakeConditionVariable(&condition);
 		LeaveCriticalSection(&sequenceStruct.lock);
-#endif
+#endif    
     }
 
     //Thread process to play a sequence of symbols in linux
@@ -591,7 +611,7 @@ namespace TapX
 
         while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
         {
-            std::string symbol = *it;
+            std::string symbol = trim(*it);
             if(std::string(symbol).compare("PAUSE") == 0)
             {
                 usleep(sequenceStruct.iwi*1000);
@@ -599,10 +619,12 @@ namespace TapX
             else
             {
                 pthread_mutex_lock(&sequenceStruct.lock);
-                player->playHapticSymbol(symbol);
-                pthread_cond_wait(&condition, &sequenceStruct.lock);
-                if(it + 1 != sequenceStruct.sequence.end())
-                    usleep(sequenceStruct.ici*1000);
+                if(player->playHapticSymbol(symbol) == TapsNoError)
+                {
+                    pthread_cond_wait(&condition, &sequenceStruct.lock);
+                    if(it + 1 != sequenceStruct.sequence.end())
+                        usleep(sequenceStruct.ici*1000);
+                }
                 pthread_mutex_unlock(&sequenceStruct.lock);
             }
             it++;
@@ -625,7 +647,7 @@ namespace TapX
 
 		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
 		{
-			std::string symbol = *it;
+			std::string symbol = trim(*it);
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
 				Sleep(sequenceStruct.iwi);
@@ -633,13 +655,15 @@ namespace TapX
 			else
 			{
 				EnterCriticalSection(&sequenceStruct.lock);
-				player->playHapticSymbol(symbol);
-				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-				LeaveCriticalSection(&sequenceStruct.lock);
-				if (it + 1 != sequenceStruct.sequence.end())
+                if(player->playHapticSymbol(symbol) == TapsNoError)
 				{
-					Sleep(sequenceStruct.ici);
-				}
+                    SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+                    LeaveCriticalSection(&sequenceStruct.lock);
+                    if (it + 1 != sequenceStruct.sequence.end())
+                    {
+                        Sleep(sequenceStruct.ici);
+                    }
+                }
 			}
 			it++;
 		}

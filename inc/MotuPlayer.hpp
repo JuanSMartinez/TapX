@@ -115,7 +115,7 @@ namespace TapX
             TapsError startPlaybackSession();
             TapsError stopPlaybackSession();
             void signalSymbolCallback(TapsError err);
-            void playSymbol(std::string code);
+            TapsError playSymbol(std::string code);
             void playSequence(std::vector<std::string> sequence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
             void splitStringBy(std::vector<std::string>* result, std::string delimiter, std::string str);
             
@@ -139,7 +139,7 @@ namespace TapX
             void signalSentencePlayedCallback(TapsError err);
 
 			//Playing functions
-            void playHapticSymbol(std::string code);
+            TapsError playHapticSymbol(std::string code);
             void playSymbolSequence(std::vector<std::string> sequence, int ici);
 			void playSymbolSequence(std::vector<std::string> sequence, int ici, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
 
