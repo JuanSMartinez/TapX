@@ -646,24 +646,35 @@ namespace TapX
 		previousSymbolCallback = player->getRegisteredSymbolCallback();
 		player->registerSymbolPlayedCallback(syncCallback);
 		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
-
+		TapsError err;
 		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
 		{
 			std::string symbol = *it;
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
-				Sleep(sequenceStruct.iwi);
+				if (sequenceStruct.iwi != 0)
+				{
+					
+					Sleep(sequenceStruct.iwi);
+				}
+					
 			}
 			else
 			{
 				EnterCriticalSection(&sequenceStruct.lock);
-                if(player->playHapticSymbol(symbol) == TapsNoError)
+				err = player->playHapticSymbol(symbol);
+				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+				LeaveCriticalSection(&sequenceStruct.lock);
+                if(err == TapsNoError)
 				{
-                    SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-                    LeaveCriticalSection(&sequenceStruct.lock);
+                    
                     if (it + 1 != sequenceStruct.sequence.end())
                     {
-                        Sleep(sequenceStruct.ici);
+						if (sequenceStruct.ici != 0)
+						{
+							//System::Threading::Thread::Sleep(sequenceStruct.ici);
+							Sleep(sequenceStruct.ici);
+						}
                     }
                 }
 			}
@@ -723,6 +734,8 @@ namespace TapX
 		std::vector<std::string> phonemes;
 		MotuPlayer* player = MotuPlayer::getInstance();
 		player->getPhonemesOfSentence(&phonemes, sentenceData.sentence);
+		if (sentenceData.sentenceTranscribedCallback != 0)
+			sentenceData.sentenceTranscribedCallback();
 		sequenceStruct.sequence = phonemes;
 		sequenceStruct.ici = sentenceData.ici;
 		sequenceStruct.iwi = sentenceData.iwi;
@@ -735,14 +748,14 @@ namespace TapX
 		previousSymbolCallback = player->getRegisteredSymbolCallback();
 		player->registerSymbolPlayedCallback(syncCallback);
 		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
-		if (sentenceData.sentenceTranscribedCallback != 0)
-			sentenceData.sentenceTranscribedCallback();
+		
 		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
 		{
 			std::string symbol = *it;
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
-				Sleep(sequenceStruct.iwi);
+				if (sequenceStruct.iwi != 0)
+					Sleep(sequenceStruct.iwi);
 			}
 			else
 			{
@@ -752,7 +765,8 @@ namespace TapX
 				LeaveCriticalSection(&sequenceStruct.lock);
 				if (it + 1 != sequenceStruct.sequence.end())
 				{
-					Sleep(sequenceStruct.ici);
+					if (sequenceStruct.ici != 0)
+						Sleep(sequenceStruct.ici);
 				}
 			}
 			it++;

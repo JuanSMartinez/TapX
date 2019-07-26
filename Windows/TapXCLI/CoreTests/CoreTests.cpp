@@ -273,8 +273,8 @@ int main()
 	//return getFlitePhonemes();
 	//return getPhonemes();
 	//return playSentence();
-	//return playSequenceOfSymbolsStartFlag();
-	return playSentenceStartFlag();
+	return playSequenceOfSymbolsStartFlag();
+	//return playSentenceStartFlag();
 	
 }
 
