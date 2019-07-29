@@ -98,6 +98,8 @@ namespace TapX
             std::unordered_map<std::string, HapticSymbol*> chunks;
             std::unordered_map<std::string, HapticSymbol*> flags;
             std::unordered_map<std::string, std::string> fliteMapping;
+			HapticSymbol* iciSilence;
+			HapticSymbol* iwiSilence;
             int numberOfChunks, numberOfPhonemes, numberOfFlags;
             bool sessionStarted, playing;
             SymbolPlayedCallback symbolCallback;
@@ -112,12 +114,12 @@ namespace TapX
             void initializeFliteMapping();
             PaDeviceIndex getMotuIndex();
             HapticSymbol* getCurrentPlayingSymbol();
-            TapsError startPlaybackSession();
-            TapsError stopPlaybackSession();
             void signalSymbolCallback(TapsError err);
             TapsError playSymbol(std::string code);
             void playSequence(std::vector<std::string> sequence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag);
             void splitStringBy(std::vector<std::string>* result, std::string delimiter, std::string str);
+			TapsError startPlaybackSession();
+			TapsError stopPlaybackSession();
             
             static int paCallback(const void *inputBuffer, void *outputBuffer,
                             unsigned long framesPerBuffer,
@@ -140,6 +142,9 @@ namespace TapX
 			void interruptStream();
 			void startStream();
 			bool isStreamActive();
+			void setSilenceParameters(int ici, int iwi);
+			void playICI();
+			void playIWI();
 
 			//Playing functions
             TapsError playHapticSymbol(std::string code);

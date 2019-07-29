@@ -28,6 +28,12 @@ namespace TapX
         return matrixRows;
     }
 
+	//Get the symbol id
+	std::string HapticSymbol::getSymbolId() const
+	{
+		return id;
+	}
+
     //Get the number of remaining rows to be consumed from the matrix
     size_t HapticSymbol::remainingRows()
     {
@@ -121,12 +127,8 @@ namespace TapX
     //Initialize matrix data as a period of silence of a certain amount of ms and a sample frequency
     void HapticSymbol::initializeData(int durationMs, int fs)
     {
-        matrixRows = fs/(durationMs*1000);
-        for(int i = 0; i < matrixRows; i++)
-        {
-            for(int j = 0; j < 24; j++)
-                dataMatrix[i*24 + j] = 0.0;
-        }
+        matrixRows = fs*(durationMs/1000.0);
+		dataMatrix = (float*)calloc(matrixRows * 24, sizeof(float));
     }
 
     //Reset the index to zero
@@ -134,4 +136,12 @@ namespace TapX
     {
         matrixRowIndex = 0;
     }
+
+	//Reset the data matrix as a period of silence of a certain amount of ms and a sample frequency
+	void HapticSymbol::resetAsSilence(int durationMs, int fs)
+	{
+		free(dataMatrix);
+		resetIndex();
+		initializeData( durationMs, fs);
+	}
 }

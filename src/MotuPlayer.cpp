@@ -252,6 +252,12 @@ namespace TapX
         //Flite mapping
         initializeFliteMapping();
 
+		//Periods of silence
+		iciSilence = new HapticSymbol("ICI");
+		iciSilence->initializeData(100, SAMPLE_RATE);
+		iwiSilence = new HapticSymbol("IWI");
+		iwiSilence->initializeData(100, SAMPLE_RATE);
+
     }
 
     //Get the current playing symbol
@@ -522,6 +528,27 @@ namespace TapX
 		}
 	}
 
+	//Set the parameters for the periods of silence
+	void MotuPlayer::setSilenceParameters(int ici, int iwi)
+	{
+		iciSilence->resetAsSilence(ici, SAMPLE_RATE);
+		iwiSilence->resetAsSilence(iwi, SAMPLE_RATE);
+	}
+
+	//Play ICI period
+	void MotuPlayer::playICI()
+	{
+		iciSilence->resetIndex();
+		currentPlayingSymbol = iciSilence;
+	}
+
+	//Play IWI period
+	void MotuPlayer::playIWI()
+	{
+		iwiSilence->resetIndex();
+		currentPlayingSymbol = iwiSilence;
+	}
+
     //Trim a string
 #ifdef __linux__
     std::string trim(std::string str)
@@ -684,6 +711,7 @@ namespace TapX
 		player->registerSymbolPlayedCallback(syncCallback);
 		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
 		TapsError err;
+		player->setSilenceParameters(sequenceStruct.ici, sequenceStruct.iwi);
 		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
 		{
 			std::string symbol = *it;
@@ -691,8 +719,10 @@ namespace TapX
 			{
 				if (sequenceStruct.iwi != 0)
 				{
-					
-					Sleep(sequenceStruct.iwi);
+					EnterCriticalSection(&sequenceStruct.lock);
+					player->playIWI();
+					SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+					LeaveCriticalSection(&sequenceStruct.lock);
 				}
 					
 			}
@@ -709,9 +739,11 @@ namespace TapX
                     {
 						if (sequenceStruct.ici != 0)
 						{
-							
-							Sleep(sequenceStruct.ici);
-							//System::Threading::Thread::Sleep(sequenceStruct.ici);
+							//At this point, we are not sure if all data has been played on the tactors
+							EnterCriticalSection(&sequenceStruct.lock);
+							player->playICI();
+							SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+							LeaveCriticalSection(&sequenceStruct.lock);
 						}
                     }
                 }
@@ -793,7 +825,12 @@ namespace TapX
 			if (std::string(symbol).compare("PAUSE") == 0)
 			{
 				if (sequenceStruct.iwi != 0)
-					Sleep(sequenceStruct.iwi);
+				{
+					EnterCriticalSection(&sequenceStruct.lock);
+					player->playIWI();
+					SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+					LeaveCriticalSection(&sequenceStruct.lock);
+				}
 			}
 			else
 			{
@@ -804,7 +841,13 @@ namespace TapX
 				if (it + 1 != sequenceStruct.sequence.end())
 				{
 					if (sequenceStruct.ici != 0)
-						Sleep(sequenceStruct.ici);
+					{
+						//At this point, we are not sure if all data has been played on the tactors
+						EnterCriticalSection(&sequenceStruct.lock);
+						player->playICI();
+						SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
+						LeaveCriticalSection(&sequenceStruct.lock);
+					}
 				}
 			}
 			it++;

@@ -16,6 +16,7 @@ namespace TapX
             HapticSymbol(std::string symbolLabel);
             ~HapticSymbol();
             size_t getMatrixRowIndex () const;
+			std::string getSymbolId() const;
             size_t getMatrixRows() const;
             bool matrixConsumed() const;
             bool increaseIndex();
@@ -26,5 +27,6 @@ namespace TapX
             float* samplesFromRow(int row);
             bool increaseIndexBy(int increase);
             size_t remainingRows();
+			void resetAsSilence(int durationMs, int fs);
     };
 }
