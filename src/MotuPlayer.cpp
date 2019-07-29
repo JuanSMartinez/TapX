@@ -284,22 +284,25 @@ namespace TapX
                 //Fill the rest of the buffer with zeros
                 out += 24*rowsRemaining;
                 memcpy(out, player->getZeros(), sizeof(float)*24*(framesPerBuffer-rowsRemaining));
-                player->signalSymbolCallback(TapsNoError);
                 player->currentPlayingSymbol = 0;
+				player->signalSymbolCallback(TapsNoError);
             }
             else
             {
                 //Fill all the frames of the buffer with data from matrix and increase the index by the frames consumed
                 memcpy(out, symbol->samplesFromRow((int)symbol->getMatrixRowIndex()), sizeof(float)*framesPerBuffer*24);
                 symbol->increaseIndexBy(framesPerBuffer);
+				
             }
+	
         }
         else
         {
-            memcpy(out, player->getZeros(), sizeof(float)*24*framesPerBuffer);
+			memcpy(out, player->getZeros(), sizeof(float)*24*framesPerBuffer);
         }
+		return paContinue;
+
         
-        return paContinue;
     }
 
     //Stream finished callback
@@ -321,19 +324,26 @@ namespace TapX
 
 #ifdef _WIN32
 		std::string motuName("Out 1-24 (Out 1-24)");
+		std::string hostName("Windows WASAPI");
+		const PaHostApiInfo *hostInfo;
 #endif
-        for(int i = 0; i < numDevices; i++){
+        for(int i = 0; i < numDevices && motu == paNoDevice; i++)
+		{
             deviceInfo = Pa_GetDeviceInfo(i);
 #ifdef __linux__
             const char* name = deviceInfo->name;
             if( deviceInfo->maxOutputChannels == 24 && strstr(name, substr) != NULL)
                 motu = i;
 #else
+			hostInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
 			std::string deviceName(deviceInfo->name);
+			std::string deviceHostName(hostInfo->name);
+
 			if (deviceInfo->maxOutputChannels == 24 && deviceName.compare(motuName) == 0)
 			{
 				motu = i;
 			}
+
 #endif
         }
         if(motu != paNoDevice){
@@ -356,7 +366,8 @@ namespace TapX
             return TapsErrorInitializing;
         }
 
-        outputParameters.device = getMotuIndex();
+		PaDeviceIndex motuIndex = getMotuIndex();
+        outputParameters.device = motuIndex;
         if (outputParameters.device == paNoDevice) {
             Pa_Terminate();
             return TapsNoMotuFound;
@@ -485,6 +496,32 @@ namespace TapX
         return playing;
     }
 
+	//Stop the stream
+	void MotuPlayer::interruptStream()
+	{
+		PaError err = Pa_StopStream(stream);
+		if (err != paNoError)
+		{
+			printf("Could not interrupt the stream\n");
+		}
+	}
+
+	//Is the stream active
+	bool MotuPlayer::isStreamActive()
+	{
+		return Pa_IsStreamActive(stream);
+	}
+
+	//Start the stream
+	void MotuPlayer::startStream()
+	{
+		PaError err = Pa_StartStream(stream);
+		if (err != paNoError)
+		{
+			printf("Could not start the stream\n");
+		}
+	}
+
     //Trim a string
 #ifdef __linux__
     std::string trim(std::string str)
@@ -512,7 +549,7 @@ namespace TapX
         else if(!playing)
         {
             std::unordered_map<std::string, HapticSymbol*>::iterator it;
-
+			
             //If its a phoneme
             it = phonemes.find(code);
             if(it != phonemes.end())
@@ -545,8 +582,8 @@ namespace TapX
                 currentPlayingSymbol = chunk;
                 return TapsNoError;
             }
+			signalSymbolCallback(TapsErrorSymbolNotFound);
             return TapsErrorSymbolNotFound;
-            signalSymbolCallback(TapsErrorSymbolNotFound);
         }
         else
         {
@@ -672,8 +709,9 @@ namespace TapX
                     {
 						if (sequenceStruct.ici != 0)
 						{
-							//System::Threading::Thread::Sleep(sequenceStruct.ici);
+							
 							Sleep(sequenceStruct.ici);
+							//System::Threading::Thread::Sleep(sequenceStruct.ici);
 						}
                     }
                 }

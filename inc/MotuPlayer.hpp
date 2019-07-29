@@ -137,6 +137,9 @@ namespace TapX
             SymbolPlayedCallback getRegisteredSymbolCallback();
             bool isPlaying();
             void signalSentencePlayedCallback(TapsError err);
+			void interruptStream();
+			void startStream();
+			bool isStreamActive();
 
 			//Playing functions
             TapsError playHapticSymbol(std::string code);
