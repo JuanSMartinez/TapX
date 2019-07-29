@@ -674,24 +674,42 @@ namespace TapX
         previousSymbolCallback = player->getRegisteredSymbolCallback();
         player->registerSymbolPlayedCallback(syncCallback);
         std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
+		TapsError err;
 
         while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
         {
             std::string symbol = trim(*it);
             if(std::string(symbol).compare("PAUSE") == 0)
             {
-                usleep(sequenceStruct.iwi*1000);
+				if (sequenceStruct.iwi != 0)
+				{
+					pthread_mutex_lock(&sequenceStruct.lock);
+					player->playIWI();
+					pthread_cond_wait(&condition, &sequenceStruct.lock);
+					pthread_mutex_unlock(&sequenceStruct.lock);
+				}
             }
             else
             {
-                pthread_mutex_lock(&sequenceStruct.lock);
-                if(player->playHapticSymbol(symbol) == TapsNoError)
+				pthread_mutex_lock(&sequenceStruct.lock);
+				err = player->playHapticSymbol(symbol);
+				pthread_cond_wait(&condition, &sequenceStruct.lock);
+				pthread_mutex_unlock(&sequenceStruct.lock);
+
+                if(err == TapsNoError)
                 {
-                    pthread_cond_wait(&condition, &sequenceStruct.lock);
-                    if(it + 1 != sequenceStruct.sequence.end())
-                        usleep(sequenceStruct.ici*1000);
+					if (it + 1 != sequenceStruct.sequence.end())
+					{
+						if (sequenceStruct.ici != 0)
+						{
+							pthread_mutex_lock(&sequenceStruct.lock);
+							player->playICI();
+							pthread_cond_wait(&condition, &sequenceStruct.lock);
+							pthread_mutex_unlock(&sequenceStruct.lock);
+						}
+					}
                 }
-                pthread_mutex_unlock(&sequenceStruct.lock);
+                
             }
             it++;
         }
