@@ -830,6 +830,7 @@ namespace TapX
 		sequenceStruct.err = TapsNoError;
 		sequenceStruct.startFlagCallback = sentenceData.startFlagCallback;
 		sequenceStruct.startFlag = sentenceData.startFlag;
+		player->setSilenceParameters(sequenceStruct.ici, sequenceStruct.iwi);
 		if (sequenceStruct.startFlagCallback != 0)
 			sequenceStruct.sequence.insert(sequenceStruct.sequence.begin(), sequenceStruct.startFlag);
 
