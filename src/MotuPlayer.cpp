@@ -675,7 +675,7 @@ namespace TapX
         player->registerSymbolPlayedCallback(syncCallback);
         std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
 		TapsError err;
-
+		player->setSilenceParameters(sequenceStruct.ici, sequenceStruct.iwi);
         while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
         {
             std::string symbol = trim(*it);
