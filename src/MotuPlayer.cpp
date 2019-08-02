@@ -255,8 +255,10 @@ namespace TapX
 		//Periods of silence
 		iciSilence = new HapticSymbol("ICI");
 		iciSilence->initializeData(100, SAMPLE_RATE);
+		lastICI = 100;
 		iwiSilence = new HapticSymbol("IWI");
 		iwiSilence->initializeData(100, SAMPLE_RATE);
+		lastIWI = 100;
 
     }
 
@@ -531,8 +533,17 @@ namespace TapX
 	//Set the parameters for the periods of silence
 	void MotuPlayer::setSilenceParameters(int ici, int iwi)
 	{
-		iciSilence->resetAsSilence(ici, SAMPLE_RATE);
-		iwiSilence->resetAsSilence(iwi, SAMPLE_RATE);
+		if (ici != lastICI)
+		{
+			iciSilence->resetAsSilence(ici, SAMPLE_RATE);
+			lastICI = ici;
+		}
+		
+		if (iwi != lastIWI)
+		{
+			iwiSilence->resetAsSilence(iwi, SAMPLE_RATE);
+			lastIWI = iwi;
+		}
 	}
 
 	//Play ICI period

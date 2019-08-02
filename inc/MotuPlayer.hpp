@@ -100,7 +100,7 @@ namespace TapX
             std::unordered_map<std::string, std::string> fliteMapping;
 			HapticSymbol* iciSilence;
 			HapticSymbol* iwiSilence;
-            int numberOfChunks, numberOfPhonemes, numberOfFlags;
+            int numberOfChunks, numberOfPhonemes, numberOfFlags, lastICI, lastIWI;
             bool sessionStarted, playing;
             SymbolPlayedCallback symbolCallback;
             SequencePlayedCallback sequenceCallback;
