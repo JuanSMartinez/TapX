@@ -8,11 +8,22 @@ namespace TapX
     pthread_mutex_t motu_lock;
 #else
 	bool motu_lock = false;
-	//std::mutex motu_lock;
 #endif
 
+#ifdef __linux__
+	pthread_mutex_t lock;
+#else
+	CRITICAL_SECTION lock;
+#endif
+
+	//Synchronization for playing sequences
+	std::atomic<bool> playingSequenceLock(false);
+
+	//Mutex to control threads that play sequences
+	HANDLE sequenceMutex;
+
     //Structure of a sequence of symbols
-    SequenceStructure sequenceStruct;
+    SequenceStructure* sequenceStruct;
 
     //Previously set callback for playing symbols
     SymbolPlayedCallback previousSymbolCallback = 0;
@@ -58,9 +69,10 @@ namespace TapX
         symbolCallback = 0;
         sequenceCallback = 0;
         zeros = (float*)calloc(24 * FRAMES_PER_BUFFER, sizeof(float));
+		sequenceMutex = CreateMutex(NULL, FALSE, NULL);
 #ifdef _WIN32
 		InitializeConditionVariable(&condition);
-		InitializeCriticalSection(&sequenceStruct.lock);
+		InitializeCriticalSection(&lock);
 #endif
         initializeData();
             
@@ -659,20 +671,20 @@ namespace TapX
     //NOTE: this is not a method of the player class
     void syncCallback(TapsError err)
     {
-        sequenceStruct.err = err;
-		if (sequenceStruct.startFlagCallback != 0)
+        sequenceStruct->err = err;
+		if (sequenceStruct->startFlagCallback != 0)
 		{
-			sequenceStruct.startFlagCallback(err);
-			sequenceStruct.startFlagCallback = 0;
+			sequenceStruct->startFlagCallback(err);
+			sequenceStruct->startFlagCallback = 0;
 		}
 #ifdef __linux__
         pthread_mutex_lock(&sequenceStruct.lock);
         pthread_cond_signal(&condition);
         pthread_mutex_unlock(&sequenceStruct.lock);
 #else
-		EnterCriticalSection(&sequenceStruct.lock);
+		EnterCriticalSection(&lock);
 		WakeConditionVariable(&condition);
-		LeaveCriticalSection(&sequenceStruct.lock);
+		LeaveCriticalSection(&lock);
 #endif    
     }
 
@@ -694,18 +706,18 @@ namespace TapX
             {
 				if (sequenceStruct.iwi != 0)
 				{
-					pthread_mutex_lock(&sequenceStruct.lock);
+					pthread_mutex_lock(&lock);
 					player->playIWI();
-					pthread_cond_wait(&condition, &sequenceStruct.lock);
-					pthread_mutex_unlock(&sequenceStruct.lock);
+					pthread_cond_wait(&condition, &lock);
+					pthread_mutex_unlock(&lock);
 				}
             }
             else
             {
-				pthread_mutex_lock(&sequenceStruct.lock);
+				pthread_mutex_lock(&lock);
 				err = player->playHapticSymbol(symbol);
-				pthread_cond_wait(&condition, &sequenceStruct.lock);
-				pthread_mutex_unlock(&sequenceStruct.lock);
+				pthread_cond_wait(&condition, &lock);
+				pthread_mutex_unlock(&lock);
 
                 if(err == TapsNoError)
                 {
@@ -713,10 +725,10 @@ namespace TapX
 					{
 						if (sequenceStruct.ici != 0)
 						{
-							pthread_mutex_lock(&sequenceStruct.lock);
+							pthread_mutex_lock(&lock);
 							player->playICI();
-							pthread_cond_wait(&condition, &sequenceStruct.lock);
-							pthread_mutex_unlock(&sequenceStruct.lock);
+							pthread_cond_wait(&condition, &lock);
+							pthread_mutex_unlock(&lock);
 						}
 					}
                 }
@@ -735,53 +747,65 @@ namespace TapX
 #ifdef _WIN32
 	DWORD playSequenceProcessWin(LPVOID lpParam)
 	{
-		MotuPlayer* player = MotuPlayer::getInstance();
-		previousSymbolCallback = player->getRegisteredSymbolCallback();
-		player->registerSymbolPlayedCallback(syncCallback);
-		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
-		TapsError err;
-		player->setSilenceParameters(sequenceStruct.ici, sequenceStruct.iwi);
-		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
+		DWORD waitResult = WaitForSingleObject(sequenceMutex, 0);
+		if (waitResult == WAIT_OBJECT_0)
 		{
-			std::string symbol = *it;
-			if (std::string(symbol).compare("PAUSE") == 0)
+			sequenceStruct = (SequenceStructure*)lpParam;
+			MotuPlayer* player = MotuPlayer::getInstance();
+			previousSymbolCallback = player->getRegisteredSymbolCallback();
+			player->registerSymbolPlayedCallback(syncCallback);
+			std::vector<std::string>::iterator it = sequenceStruct->sequence.begin();
+			TapsError err;
+			player->setSilenceParameters(sequenceStruct->ici, sequenceStruct->iwi);
+			while (it != sequenceStruct->sequence.end() && sequenceStruct->err == TapsNoError)
 			{
-				if (sequenceStruct.iwi != 0)
+				std::string symbol = *it;
+				if (std::string(symbol).compare("PAUSE") == 0)
 				{
-					EnterCriticalSection(&sequenceStruct.lock);
-					player->playIWI();
-					SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-					LeaveCriticalSection(&sequenceStruct.lock);
+					if (sequenceStruct->iwi != 0)
+					{
+						EnterCriticalSection(&lock);
+						player->playIWI();
+						SleepConditionVariableCS(&condition, &lock, INFINITE);
+						LeaveCriticalSection(&lock);
+					}
+
 				}
-					
-			}
-			else
-			{
-				EnterCriticalSection(&sequenceStruct.lock);
-				err = player->playHapticSymbol(symbol);
-				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-				LeaveCriticalSection(&sequenceStruct.lock);
-                if(err == TapsNoError)
+				else
 				{
-                    
-                    if (it + 1 != sequenceStruct.sequence.end())
-                    {
-						if (sequenceStruct.ici != 0)
+					EnterCriticalSection(&lock);
+					err = player->playHapticSymbol(symbol);
+					SleepConditionVariableCS(&condition, &lock, INFINITE);
+					LeaveCriticalSection(&lock);
+					if (err == TapsNoError)
+					{
+
+						if (it + 1 != sequenceStruct->sequence.end())
 						{
-							//At this point, we are not sure if all data has been played on the tactors
-							EnterCriticalSection(&sequenceStruct.lock);
-							player->playICI();
-							SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-							LeaveCriticalSection(&sequenceStruct.lock);
+							if (sequenceStruct->ici != 0)
+							{
+								//At this point, we are not sure if all data has been played on the tactors
+								EnterCriticalSection(&lock);
+								player->playICI();
+								SleepConditionVariableCS(&condition, &lock, INFINITE);
+								LeaveCriticalSection(&lock);
+							}
 						}
-                    }
-                }
+					}
+				}
+				it++;
 			}
-			it++;
+			player->signalSentencePlayedCallback(sequenceStruct->err);
+			player->registerSymbolPlayedCallback(previousSymbolCallback);
+			delete sequenceStruct;
+			sequenceStruct = NULL;
+			ReleaseMutex(sequenceMutex);
+			return 0;
 		}
-		player->signalSentencePlayedCallback(sequenceStruct.err);
-		player->registerSymbolPlayedCallback(previousSymbolCallback);
-		return 0;
+		else
+		{
+			return -1;
+		}
 	}
 #endif
 
@@ -789,14 +813,18 @@ namespace TapX
     //Play a sequence of symbols including possible pauses for words
     void MotuPlayer::playSequence(std::vector<std::string> sequence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag)
     {
-        sequenceStruct.sequence = sequence;
-        sequenceStruct.ici = ici;
-        sequenceStruct.iwi = iwi;
-        sequenceStruct.err = TapsNoError;
-		sequenceStruct.startFlagCallback = startFlagCallback;
-		sequenceStruct.startFlag = startFlag;
-		if(startFlagCallback != 0)
-			sequenceStruct.sequence.insert(sequenceStruct.sequence.begin(), startFlag);
+		SequenceStructure *newSequenceStruct = new SequenceStructure;
+		newSequenceStruct->sequence = sequence;
+		newSequenceStruct->ici = ici;
+		newSequenceStruct->iwi = iwi;
+		newSequenceStruct->err = TapsNoError;
+		newSequenceStruct->startFlagCallback = startFlagCallback;
+		newSequenceStruct->startFlag = startFlag;
+		if (startFlagCallback != 0)
+			newSequenceStruct->sequence.insert(newSequenceStruct->sequence.begin(), startFlag);
+
+		newSequenceStruct->sentence = "";
+		newSequenceStruct->sentenceTranscribedCallback = 0;
 #ifdef __linux__
         pthread_t thread;
         if(pthread_create(&thread, NULL, playSequenceProcessLinux, NULL) == 0)
@@ -809,83 +837,79 @@ namespace TapX
         }
 #else
 
-		DWORD threadId;
-		HANDLE threadHandle = CreateThread(NULL, 0, playSequenceProcessWin, NULL, 0, &threadId);
+		CreateThread(NULL, 0, playSequenceProcessWin, newSequenceStruct, 0, NULL);
 		
 #endif
         
     }
 
 #ifdef _WIN32
-	typedef struct 
-	{
-		std::string sentence;
-		int ici;
-		int iwi;
-		StartFlagPlayedCallback startFlagCallback;
-		SentenceTranscribedCallback sentenceTranscribedCallback;
-		std::string startFlag;
-	}SentenceData;
 
-	SentenceData sentenceData;
 	DWORD WINAPI playSentenceProcessWin(LPVOID lpParam)
 	{
-		std::vector<std::string> phonemes;
-		MotuPlayer* player = MotuPlayer::getInstance();
-		player->getPhonemesOfSentence(&phonemes, sentenceData.sentence);
-		if (sentenceData.sentenceTranscribedCallback != 0)
-			sentenceData.sentenceTranscribedCallback();
-		sequenceStruct.sequence = phonemes;
-		sequenceStruct.ici = sentenceData.ici;
-		sequenceStruct.iwi = sentenceData.iwi;
-		sequenceStruct.err = TapsNoError;
-		sequenceStruct.startFlagCallback = sentenceData.startFlagCallback;
-		sequenceStruct.startFlag = sentenceData.startFlag;
-		player->setSilenceParameters(sequenceStruct.ici, sequenceStruct.iwi);
-		if (sequenceStruct.startFlagCallback != 0)
-			sequenceStruct.sequence.insert(sequenceStruct.sequence.begin(), sequenceStruct.startFlag);
-
-		previousSymbolCallback = player->getRegisteredSymbolCallback();
-		player->registerSymbolPlayedCallback(syncCallback);
-		std::vector<std::string>::iterator it = sequenceStruct.sequence.begin();
-		
-		while (it != sequenceStruct.sequence.end() && sequenceStruct.err == TapsNoError)
+		DWORD waitResult = WaitForSingleObject(sequenceMutex, 0);
+		if (waitResult == WAIT_OBJECT_0)
 		{
-			std::string symbol = *it;
-			if (std::string(symbol).compare("PAUSE") == 0)
+			sequenceStruct = (SequenceStructure*)lpParam;
+			std::vector<std::string> phonemes;
+			MotuPlayer* player = MotuPlayer::getInstance();
+			player->getPhonemesOfSentence(&phonemes, sequenceStruct->sentence);
+			if (sequenceStruct->sentenceTranscribedCallback != 0)
+				sequenceStruct->sentenceTranscribedCallback();
+			sequenceStruct->sequence = phonemes;
+			sequenceStruct->err = TapsNoError;
+			player->setSilenceParameters(sequenceStruct->ici, sequenceStruct->iwi);
+			if (sequenceStruct->startFlagCallback != 0)
+				sequenceStruct->sequence.insert(sequenceStruct->sequence.begin(), sequenceStruct->startFlag);
+
+			previousSymbolCallback = player->getRegisteredSymbolCallback();
+			player->registerSymbolPlayedCallback(syncCallback);
+			std::vector<std::string>::iterator it = sequenceStruct->sequence.begin();
+
+			while (it != sequenceStruct->sequence.end() && sequenceStruct->err == TapsNoError)
 			{
-				if (sequenceStruct.iwi != 0)
+				std::string symbol = *it;
+				if (std::string(symbol).compare("PAUSE") == 0)
 				{
-					EnterCriticalSection(&sequenceStruct.lock);
-					player->playIWI();
-					SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-					LeaveCriticalSection(&sequenceStruct.lock);
-				}
-			}
-			else
-			{
-				EnterCriticalSection(&sequenceStruct.lock);
-				player->playHapticSymbol(symbol);
-				SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-				LeaveCriticalSection(&sequenceStruct.lock);
-				if (it + 1 != sequenceStruct.sequence.end())
-				{
-					if (sequenceStruct.ici != 0)
+					if (sequenceStruct->iwi != 0)
 					{
-						//At this point, we are not sure if all data has been played on the tactors
-						EnterCriticalSection(&sequenceStruct.lock);
-						player->playICI();
-						SleepConditionVariableCS(&condition, &sequenceStruct.lock, INFINITE);
-						LeaveCriticalSection(&sequenceStruct.lock);
+						EnterCriticalSection(&lock);
+						player->playIWI();
+						SleepConditionVariableCS(&condition, &lock, INFINITE);
+						LeaveCriticalSection(&lock);
 					}
 				}
+				else
+				{
+					EnterCriticalSection(&lock);
+					player->playHapticSymbol(symbol);
+					SleepConditionVariableCS(&condition, &lock, INFINITE);
+					LeaveCriticalSection(&lock);
+					if (it + 1 != sequenceStruct->sequence.end())
+					{
+						if (sequenceStruct->ici != 0)
+						{
+							//At this point, we are not sure if all data has been played on the tactors
+							EnterCriticalSection(&lock);
+							player->playICI();
+							SleepConditionVariableCS(&condition, &lock, INFINITE);
+							LeaveCriticalSection(&lock);
+						}
+					}
+				}
+				it++;
 			}
-			it++;
+			player->signalSentencePlayedCallback(sequenceStruct->err);
+			player->registerSymbolPlayedCallback(previousSymbolCallback);
+			delete sequenceStruct;
+			sequenceStruct = NULL;
+			ReleaseMutex(sequenceMutex);
+			return 0;
 		}
-		player->signalSentencePlayedCallback(sequenceStruct.err);
-		player->registerSymbolPlayedCallback(previousSymbolCallback);
-
-		return 0;
+		else
+		{
+			return -1;
+		}
 
 	}
 #endif
@@ -912,14 +936,14 @@ namespace TapX
 	void MotuPlayer::playEnglishSentence(std::string sentence, int ici, int iwi, StartFlagPlayedCallback startFlagCallback, std::string startFlag, SentenceTranscribedCallback sentenceTranscribedCallback)
 	{
 #ifdef _WIN32
-		DWORD threadId;
-		sentenceData.ici = ici;
-		sentenceData.iwi = iwi;
-		sentenceData.sentence = sentence;
-		sentenceData.startFlagCallback = startFlagCallback;
-		sentenceData.startFlag = startFlag;
-		sentenceData.sentenceTranscribedCallback = sentenceTranscribedCallback;
-		HANDLE threadHandle = CreateThread(NULL, 0, playSentenceProcessWin, NULL, 0, &threadId);
+		SequenceStructure *newSequenceStruct = new SequenceStructure;
+		newSequenceStruct->ici = ici;
+		newSequenceStruct->iwi = iwi;
+		newSequenceStruct->sentence = sentence;
+		newSequenceStruct->startFlagCallback = startFlagCallback;
+		newSequenceStruct->startFlag = startFlag;
+		newSequenceStruct->sentenceTranscribedCallback = sentenceTranscribedCallback;
+		CreateThread(NULL, 0, playSentenceProcessWin, newSequenceStruct, 0, NULL);
 #else
 		std::vector<std::string> phonemes;
 		getPhonemesOfSentence(&phonemes, sentence);

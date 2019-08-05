@@ -243,7 +243,7 @@ namespace TapXCLI
 	//Play an English sentence using Flite with a defined ICI and IWI
 	void MotuPlayerCLI::PlayEnglishSentence(String^ sentence, int ICI, int IWI)
 	{
-		PlayEnglishSentence(sentence, ICI, ICI, nullptr, "", nullptr);
+		PlayEnglishSentence(sentence, ICI, IWI, nullptr, "", nullptr);
 	}
 
 	//Get raw flite phonemes of a sentence

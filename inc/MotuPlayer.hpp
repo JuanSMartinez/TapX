@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <atomic>
 
 #ifdef _WIN32
 #define PHONEMES_PATH ("\\Symbols\\Phonemes\\")
@@ -82,11 +83,11 @@ namespace TapX
 		std::vector<std::string> sequence;
 		StartFlagPlayedCallback startFlagCallback;
 		std::string startFlag;
-#ifdef __linux__
-        pthread_mutex_t lock;
-#else
-		CRITICAL_SECTION lock;
-#endif
+
+		//If the sequence represents an English sentence
+		SentenceTranscribedCallback sentenceTranscribedCallback;
+		std::string sentence;
+
     }SequenceStructure;
 
 
