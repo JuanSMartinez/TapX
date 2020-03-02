@@ -52,11 +52,18 @@ namespace TapX
     //Destructor
     MotuPlayer::~MotuPlayer()
     {
+		stopPlaybackSession();
         free(zeros);
+		phonemes->clear();
+		chunks->clear();
+		flags->clear();
+		delete phonemes;
+		delete chunks;
+		delete flags;
 #ifdef linux
         pthread_mutex_destroy(&motu_lock);
 #endif
-        stopPlaybackSession();
+
     }
 
     //Default constructor
@@ -69,6 +76,9 @@ namespace TapX
         symbolCallback = 0;
         sequenceCallback = 0;
         zeros = (float*)calloc(24 * FRAMES_PER_BUFFER, sizeof(float));
+		phonemes = new std::unordered_map<std::string, HapticSymbol*>;
+		flags = new std::unordered_map<std::string, HapticSymbol*>;
+		chunks = new std::unordered_map<std::string, HapticSymbol*>;
 		sequenceMutex = CreateMutex(NULL, FALSE, NULL);
 #ifdef _WIN32
 		InitializeConditionVariable(&condition);
@@ -102,7 +112,7 @@ namespace TapX
     }
 
     //Get files on a given path
-    int MotuPlayer::intializeMap(std::string path, std::unordered_map<std::string, HapticSymbol*> &map)
+    int MotuPlayer::intializeMap(std::string path, std::unordered_map<std::string, HapticSymbol*> *map)
     {
 		std::string csv_suffix = ".csv";
 		int numberOfSymbols = 0;
@@ -180,7 +190,7 @@ namespace TapX
 				HapticSymbol* symbol = new HapticSymbol(symbolName);
 				symbol->initializeData(basePath);
 				std::pair<std::string, HapticSymbol*> newPair(symbolName, symbol);
-				map.insert(newPair);
+				map->insert(newPair);
 				numberOfSymbols++;
 			}
 		} while (FindNextFile(hFind, &ffd) != 0);
@@ -601,8 +611,8 @@ namespace TapX
             std::unordered_map<std::string, HapticSymbol*>::iterator it;
 			
             //If its a phoneme
-            it = phonemes.find(code);
-            if(it != phonemes.end())
+            it = phonemes->find(code);
+            if(it != phonemes->end())
             {
                 HapticSymbol* phoneme = it->second;
                 phoneme->resetIndex();
@@ -612,8 +622,8 @@ namespace TapX
             }
 
             //If its a flag
-            it = flags.find(code);
-            if(it != flags.end())
+            it = flags->find(code);
+            if(it != flags->end())
             {
                 HapticSymbol* flag = it->second;
                 flag->resetIndex();
@@ -623,8 +633,8 @@ namespace TapX
             }
 
             //If its a chunk
-            it = chunks.find(code);
-            if(it != chunks.end())
+            it = chunks->find(code);
+            if(it != chunks->end())
             {
                 HapticSymbol* chunk = it->second;
                 chunk->resetIndex();

@@ -95,9 +95,9 @@ namespace TapX
     {
         private:
             static MotuPlayer* instance ;
-            std::unordered_map<std::string, HapticSymbol*> phonemes;
-            std::unordered_map<std::string, HapticSymbol*> chunks;
-            std::unordered_map<std::string, HapticSymbol*> flags;
+            std::unordered_map<std::string, HapticSymbol*> *phonemes;
+            std::unordered_map<std::string, HapticSymbol*> *chunks;
+            std::unordered_map<std::string, HapticSymbol*> *flags;
             std::unordered_map<std::string, std::string> fliteMapping;
 			HapticSymbol* iciSilence;
 			HapticSymbol* iwiSilence;
@@ -111,7 +111,7 @@ namespace TapX
 
             MotuPlayer();
             void initializeData();
-            int intializeMap(std::string path, std::unordered_map<std::string, HapticSymbol*> &map);
+            int intializeMap(std::string path, std::unordered_map<std::string, HapticSymbol*> *map);
             void initializeFliteMapping();
             PaDeviceIndex getMotuIndex();
             HapticSymbol* getCurrentPlayingSymbol();

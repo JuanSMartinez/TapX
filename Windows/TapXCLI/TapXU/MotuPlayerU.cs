@@ -65,7 +65,13 @@ namespace TapXU
         //Finalizer
         ~MotuPlayerU()
         {
-            finalize();
+            if (instance != null)
+            {
+                finalize();
+                instance = null;
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
         }
 
         //Initialize routine
@@ -121,6 +127,9 @@ namespace TapXU
         public void Destroy()
         {
             finalize();
+            instance = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
 
     }

@@ -268,12 +268,12 @@ int playIndividualSymbols()
 
 int main()
 {
-	//return playIndividualSymbols();
+	return playIndividualSymbols();
 	//return playSequenceOfSymbols();
 	//return getFlitePhonemes();
 	//return getPhonemes();
 	//return playSentence();
-	return playSequenceOfSymbolsStartFlag();
+	//return playSequenceOfSymbolsStartFlag();
 	//return playSentenceStartFlag();
 	
 }
