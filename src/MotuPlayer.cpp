@@ -60,6 +60,10 @@ namespace TapX
 		delete phonemes;
 		delete chunks;
 		delete flags;
+#ifdef _WIN32
+		CloseHandle(sequenceMutex);
+		DeleteCriticalSection(&lock);
+#endif
 #ifdef linux
         pthread_mutex_destroy(&motu_lock);
 #endif
@@ -79,8 +83,8 @@ namespace TapX
 		phonemes = new std::unordered_map<std::string, HapticSymbol*>;
 		flags = new std::unordered_map<std::string, HapticSymbol*>;
 		chunks = new std::unordered_map<std::string, HapticSymbol*>;
-		sequenceMutex = CreateMutex(NULL, FALSE, NULL);
 #ifdef _WIN32
+		sequenceMutex = CreateMutex(NULL, FALSE, NULL);
 		InitializeConditionVariable(&condition);
 		InitializeCriticalSection(&lock);
 #endif

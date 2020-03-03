@@ -69,8 +69,8 @@ namespace TapXU
             {
                 finalize();
                 instance = null;
-                GC.Collect();
                 GC.WaitForPendingFinalizers();
+                GC.Collect();
             }
         }
 
@@ -128,8 +128,8 @@ namespace TapXU
         {
             finalize();
             instance = null;
-            GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
     }
